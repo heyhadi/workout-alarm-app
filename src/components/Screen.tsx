@@ -1,0 +1,39 @@
+import type { ReactNode } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getSemanticTokens, type Mode } from '../../theme/helpers';
+import { space } from '../../theme/tokens';
+
+interface ScreenProps {
+  mode?: Mode;
+  children: ReactNode;
+  /** Disable the default horizontal padding (e.g. full-bleed camera). */
+  noPadding?: boolean;
+}
+
+/** App screen shell: safe area + mode background + standard padding. */
+export function Screen({ mode = 'day', children, noPadding = false }: ScreenProps) {
+  const t = getSemanticTokens(mode);
+  return (
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: t.bgScreen }]}
+      edges={['top', 'bottom', 'left', 'right']}
+    >
+      <View
+        style={[
+          styles.body,
+          { backgroundColor: t.bgScreen },
+          noPadding && styles.noPadding,
+        ]}
+      >
+        {children}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  body: { flex: 1, paddingHorizontal: space.md, paddingVertical: space.md },
+  noPadding: { paddingHorizontal: 0, paddingVertical: 0 },
+});
