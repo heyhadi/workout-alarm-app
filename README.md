@@ -21,6 +21,12 @@
 *Workout Alarm* is a strict Android alarm clock built with React Native + Expo. It exists for one
 reason: mornings where willpower loses. This is a personal project.
 
+| ![Alarm list](docs/images/1-alarm-list.png) | ![New alarm](docs/images/2-new-alarm.png) | ![Ringing / workout](docs/images/3-ringing-workout.png) |
+|---|---|---|
+| *Alarm list* | *New alarm* | *Ringing / workout* |
+
+<p align="center"><sub>Design mockups — the visual target for v1. Real screenshots once the app ships.</sub></p>
+
 ## What it does
 
 | | |
