@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/expo/eas-cli/main/packages/eas-json/schema.json",
+  "build": {
+    "development": {
+      "android": { "buildType": "apk" },
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": { "android": { "buildType": "apk" }, "distribution": "internal" },
+    "production": { "android": { "buildType": "app-bundle" } }
+  },
+  "cli": { "appVersionSource": "local", "version": ">= 16.0.0" },
+  "submit": { "production": {} }
+}

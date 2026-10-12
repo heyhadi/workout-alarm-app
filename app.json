@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A162E",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.workoutalarm.app",
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
+        "android.permission.WAKE_LOCK",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "extra": {
+      "apiBaseUrl": {},
+      "eas": {
+        "projectId": "e7e097cf-1e97-43a8-8348-07fb82cf4012"
+      },
+      "env": "development",
+      "router": {}
+    },
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.workoutalarm.app",
+      "supportsTablet": true
+    },
+    "name": "Workout Alarm",
+    "orientation": "portrait",
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-font",
+      "expo-splash-screen",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Workout Alarm uses the camera to verify your workout reps on-device. No video is recorded or uploaded."
+        }
+      ],
+      "./plugins/withExactAlarms",
+      "./plugins/withRingingService",
+      "./plugins/withBootReceiver",
+      "./plugins/withLockTask",
+      "./plugins/withWorkoutAlarmPackage"
+    ],
+    "scheme": "workoutalarm",
+    "slug": "workout-alarm-app",
+    "userInterfaceStyle": "light",
+    "version": "1.0.0",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "owner": "heyhadiexpo"
+  }
+}
