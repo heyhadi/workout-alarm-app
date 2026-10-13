@@ -3,7 +3,9 @@ package com.workoutalarm.app.pose
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.facebook.react.bridge.Arguments
@@ -91,10 +93,18 @@ class PoseModule(reactContext: ReactApplicationContext) :
         try {
           provider.unbindAll()
           // Front camera: the user faces the phone propped up.
+          // Single session binds Preview + Analysis together — one camera
+          // client, no fight over the exclusive resource.
+          val useCases = mutableListOf<androidx.camera.core.UseCase>(analysis)
+          previewViewRef?.let { pv ->
+            val preview = Preview.Builder().build()
+            preview.setSurfaceProvider(pv.surfaceProvider)
+            useCases.add(0, preview)
+          }
           provider.bindToLifecycle(
             activity,
             androidx.camera.core.CameraSelector.DEFAULT_FRONT_CAMERA,
-            analysis
+            *useCases.toTypedArray()
           )
         } catch (e: Exception) {
           promise.reject("BIND_FAILED", "Camera bind failed: ${e.message}", e)
@@ -280,5 +290,24 @@ class PoseModule(reactContext: ReactApplicationContext) :
     private const val PHASE_DOWN = 2
     private const val PHASE_ASCENDING = 3
     private const val POSE_LOST_MS = 2500L
+
+    /**
+     * Preview surface from PoseCameraViewManager. Static because the view
+     * manager and the module are created independently by React Native.
+     * Null when the native preview isn't mounted (then analysis runs
+     * headless — reps still count, just no viewfinder).
+     */
+    @Volatile
+    private var previewViewRef: PreviewView? = null
+
+    @JvmStatic
+    fun attachPreviewView(view: PreviewView) {
+      previewViewRef = view
+    }
+
+    @JvmStatic
+    fun detachPreviewView() {
+      previewViewRef = null
+    }
   }
 }
