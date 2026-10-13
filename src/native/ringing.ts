@@ -8,6 +8,7 @@
  * target is verified — the ONLY code path that stops the sound.
  */
 import type { AlarmReleasedPayload, ExerciseType } from '../types';
+import { DeviceEventEmitter } from 'react-native';
 import {
   getModuleEventEmitter,
   getNativeModule,
@@ -102,6 +103,17 @@ export function addAlarmReleasedListener(
 ): () => void {
   const emitter = getModuleEventEmitter(MODULE_NAME);
   const sub = emitter.addListener('onAlarmReleased', listener);
+  return () => sub.remove();
+}
+
+/**
+ * Fired by MainActivity.onNewIntent when the alarm's full-screen intent
+ * arrives while the app is already alive (foreground or background).
+ * The AppState 'active' listener misses this when the app is already
+ * foregrounded, so this event is the reliable signal to route to /ringing.
+ */
+export function addRingingIntentListener(listener: () => void): () => void {
+  const sub = DeviceEventEmitter.addListener('onRingingIntent', listener);
   return () => sub.remove();
 }
 
