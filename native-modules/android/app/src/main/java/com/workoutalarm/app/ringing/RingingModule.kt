@@ -82,4 +82,24 @@ class RingingModule(reactContext: ReactApplicationContext) :
       promise.resolve(null)
     }
   }
+
+  /**
+   * Fallback that does not depend on the Activity intent at all: asks the
+   * service directly what it is ringing for. Used when getRingingIntent()
+   * misses (e.g. intent consumed before JS read it).
+   */
+  @ReactMethod
+  fun getActiveRinging(promise: Promise) {
+    val ringing = RingingService.currentRinging
+    if (ringing != null) {
+      val params = Arguments.createMap().apply {
+        putString("alarmId", ringing.alarmId)
+        putString("exercise", ringing.exercise)
+        putInt("repTarget", ringing.repTarget)
+      }
+      promise.resolve(params)
+    } else {
+      promise.resolve(null)
+    }
+  }
 }
