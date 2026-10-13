@@ -68,6 +68,30 @@ const withRingingService = (config) => {
         `      setTurnScreenOn(true)\n` +
         `    }`,
     );
+    // onNewIntent: when the app is already alive, the full-screen intent
+    // reuses MainActivity via onNewIntent — without setIntent(), the
+    // activity keeps the stale launcher intent and getRingingIntent()
+    // never sees ACTION_RINGING (alarm rings with no workout screen).
+    const newIntentAnchor = 'override fun onCreate(';
+    let updated = config.modResults.contents;
+    if (!updated.includes('override fun onNewIntent(')) {
+      updated = updated.replace(
+        newIntentAnchor,
+        'override fun onNewIntent(intent: android.content.Intent) {\n' +
+          '    super.onNewIntent(intent)\n' +
+          '    // Workout Alarm: keep the latest intent so getRingingIntent() sees it.\n' +
+          '    setIntent(intent)\n' +
+          '    if (intent.action == "' +
+          RINGING_ACTION +
+          '") {\n' +
+          '      setShowWhenLocked(true)\n' +
+          '      setTurnScreenOn(true)\n' +
+          '    }\n' +
+          '  }\n\n  ' +
+          newIntentAnchor,
+      );
+      config.modResults.contents = updated;
+    }
     return config;
   });
 
