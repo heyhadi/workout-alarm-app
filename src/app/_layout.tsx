@@ -11,7 +11,7 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { initDatabase } from '../storage/db';
-import { getRingingIntent, isRingingModuleAvailable } from '../native/ringing';
+import { getActiveRinging, getRingingIntent, isRingingModuleAvailable } from '../native/ringing';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,11 +36,13 @@ export default function RootLayout() {
 
   // If the app was launched (or woken) by the alarm's full-screen intent,
   // route straight to the workout screen. The native side consumes the
-  // intent, so a second read won't re-route.
+  // intent, so a second read won't re-route. Falls back to asking the
+  // ringing service directly, in case the intent was missed.
   useEffect(() => {
     if (!isRingingModuleAvailable()) return;
     const checkRingingIntent = () => {
       getRingingIntent()
+        .then((intent) => intent ?? getActiveRinging())
         .then((intent) => {
           if (intent) {
             router.replace({
