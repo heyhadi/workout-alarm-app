@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
+import { getSemanticTokens } from '../../theme/helpers';
 import { primitives } from '../../theme/tokens';
 
 type TabId = 'alarm' | 'practice' | 'settings';
@@ -53,11 +54,13 @@ function TabIcon({ id, color }: { id: TabId; color: string }) {
 
 export function TabBar({ active }: { active: TabId }) {
   const router = useRouter();
+  const scheme = useColorScheme();
+  const t = getSemanticTokens(scheme === 'dark' ? 'alarm' : 'day');
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { backgroundColor: t.bgScreen, borderTopColor: t.border }]}>
       {TABS.map((tab) => {
         const isActive = tab.id === active;
-        const color = isActive ? primitives.energy[500] : primitives.ink[500];
+        const color = isActive ? primitives.energy[500] : t.textSecondary;
         return (
           <Pressable
             key={tab.id}
@@ -80,9 +83,7 @@ export function TabBar({ active }: { active: TabId }) {
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    backgroundColor: primitives.ink[950],
     borderTopWidth: 1,
-    borderTopColor: primitives.ink[900],
     paddingTop: 10,
     paddingBottom: 20,
   },
