@@ -217,7 +217,9 @@ export default function DoneScreen() {
                     done
                       ? { backgroundColor: primitives.energy[500] }
                       : { borderWidth: 1, borderColor: t.border },
-                    i === today && { borderWidth: 2, borderColor: t.textPrimary },
+                    // Today gets an outline only if it isn't filled (emergency exit).
+                    i === today &&
+                      !done && { borderWidth: 2, borderColor: t.textPrimary },
                   ]}
                 >
                   <Text
