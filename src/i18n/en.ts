@@ -158,6 +158,13 @@ export const en = {
       en: 'English',
       id: 'Bahasa Indonesia',
     },
+    /** Short labels for the language segments. */
+    languageShort: {
+      system: 'Phone',
+      en: 'English',
+      id: 'Indonesia',
+    },
+    followingPhone: (language: string) => `Following your phone: ${language}`,
     readiness: 'Alarm readiness',
     ready: 'Ready',
     toFix: (n: number) => `${n} to fix`,

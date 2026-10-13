@@ -69,10 +69,16 @@ function ChoiceGroup<T extends string>({
             style={[
               styles.row,
               index > 0 && [styles.divider, { borderTopColor: t.border }],
+              isSelected && { backgroundColor: primitives.energy[50] },
             ]}
           >
             <View style={styles.rowMain}>
-              <Text style={[typeScale.label, { color: t.textPrimary }]}>
+              <Text
+                style={[
+                  typeScale.label,
+                  { color: isSelected ? primitives.energy[600] : t.textPrimary },
+                ]}
+              >
                 {choice.title}
               </Text>
               {choice.detail ? (
@@ -87,6 +93,51 @@ function ChoiceGroup<T extends string>({
           </Pressable>
         );
       })}
+    </Group>
+  );
+}
+
+/** Equal-width segments in a Group (language, lock-in window). */
+function Segments<T extends string | number>({
+  options,
+  selected,
+  onSelect,
+}: {
+  options: { value: T; label: string }[];
+  selected: T;
+  onSelect: (value: T) => void;
+}) {
+  const t = getSemanticTokens('day');
+  return (
+    <Group>
+      <View style={styles.segments}>
+        {options.map((option, index) => {
+          const isSelected = option.value === selected;
+          return (
+            <Pressable
+              key={String(option.value)}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: isSelected }}
+              onPress={() => onSelect(option.value)}
+              style={[
+                styles.segment,
+                index > 0 && [styles.segmentDivider, { borderLeftColor: t.border }],
+                isSelected && { backgroundColor: primitives.energy[50] },
+              ]}
+            >
+              <Text
+                numberOfLines={1}
+                style={[
+                  isSelected ? typeScale.label : typeScale.bodySmall,
+                  { color: isSelected ? primitives.energy[600] : t.textPrimary },
+                ]}
+              >
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </Group>
   );
 }
@@ -127,19 +178,19 @@ export default function SettingsScreen() {
         </Text>
 
         <SectionTitle>{s.language}</SectionTitle>
-        <ChoiceGroup<LanguageSetting>
+        <Segments<LanguageSetting>
           selected={language}
           onSelect={setLanguage}
-          choices={[
-            {
-              value: 'system',
-              title: s.languageOptions.system,
-              detail: s.languageOptions[systemLanguage()],
-            },
-            { value: 'en', title: s.languageOptions.en },
-            { value: 'id', title: s.languageOptions.id },
-          ]}
+          options={(['system', 'en', 'id'] as LanguageSetting[]).map((value) => ({
+            value,
+            label: s.languageShort[value],
+          }))}
         />
+        {language === 'system' && (
+          <Text style={[typeScale.bodySmall, styles.hint, { color: t.textSecondary }]}>
+            {s.followingPhone(s.languageOptions[systemLanguage()])}
+          </Text>
+        )}
 
         <SectionTitle>{s.readiness}</SectionTitle>
         <Group>
@@ -205,38 +256,17 @@ export default function SettingsScreen() {
         </Group>
 
         <SectionTitle>{s.lockIn}</SectionTitle>
-        <Group>
-          <View style={styles.segments}>
-            {LOCK_IN_OPTIONS.map((mins, index) => {
-              const isSelected = lockIn === mins;
-              return (
-                <Pressable
-                  key={mins}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: isSelected }}
-                  onPress={() => {
-                    setLockIn(mins);
-                    setLockInMinutes(mins);
-                  }}
-                  style={[
-                    styles.segment,
-                    index > 0 && [styles.segmentDivider, { borderLeftColor: t.border }],
-                    isSelected && { backgroundColor: primitives.energy[50] },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      isSelected ? typeScale.label : typeScale.bodySmall,
-                      { color: isSelected ? primitives.energy[600] : t.textPrimary },
-                    ]}
-                  >
-                    {strings.form.minutes(mins)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Group>
+        <Segments<number>
+          selected={lockIn}
+          onSelect={(mins) => {
+            setLockIn(mins);
+            setLockInMinutes(mins);
+          }}
+          options={LOCK_IN_OPTIONS.map((mins) => ({
+            value: mins,
+            label: strings.form.minutes(mins),
+          }))}
+        />
       </ScrollView>
     </Screen>
   );
@@ -266,4 +296,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentDivider: { borderLeftWidth: 1 },
+  hint: { marginTop: space.xs, marginLeft: space.xs },
 });

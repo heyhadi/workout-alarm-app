@@ -151,6 +151,12 @@ export const id: Strings = {
       en: 'English',
       id: 'Bahasa Indonesia',
     },
+    languageShort: {
+      system: 'Ponsel',
+      en: 'English',
+      id: 'Indonesia',
+    },
+    followingPhone: (language) => `Mengikuti ponsel: ${language}`,
     readiness: 'Kesiapan alarm',
     ready: 'Siap',
     toFix: (n) => `${n} perlu diperbaiki`,
