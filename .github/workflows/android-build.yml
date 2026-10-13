@@ -40,6 +40,18 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Stamp build version
+        run: |
+          python3 -c "
+          import json
+          with open('app.json') as f: cfg = json.load(f)
+          run = int('${{ github.run_number }}')
+          cfg['expo']['version'] = f'1.0.{run}'
+          cfg['expo'].setdefault('android', {})['versionCode'] = run
+          with open('app.json', 'w') as f: json.dump(cfg, f, indent=2)
+          print('version:', cfg['expo']['version'], 'versionCode:', run)
+          "   
+
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
