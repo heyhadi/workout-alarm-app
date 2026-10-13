@@ -191,6 +191,8 @@ export const en = {
       id: 'Indonesia',
     },
     followingPhone: (language: string) => `Following your phone: ${language}`,
+    appearance: 'Appearance',
+    appearanceShort: { system: 'Phone', light: 'Light', dark: 'Dark' },
     readiness: 'Alarm readiness',
     ready: 'Ready',
     readyBody: 'All alarm permissions are on.',

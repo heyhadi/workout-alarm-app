@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { space, type as typeScale } from '../../theme/tokens';
 import { soundUriOf } from '../native/alarms';
 import { useStrings } from '../i18n';
@@ -21,7 +21,7 @@ interface SoundPickerProps {
  * (no silent option) and shows the chosen sound's name.
  */
 export function SoundPicker({ value, onChange }: SoundPickerProps) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
   const available = isRingingModuleAvailable();
   const uri = soundUriOf(value);

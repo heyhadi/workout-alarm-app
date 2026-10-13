@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { AppState, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, usePathname, useRootNavigationState, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
   PlusJakartaSans_700Bold,
@@ -12,6 +11,7 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { I18nProvider } from '../i18n';
+import { AppearanceProvider } from '../appearance';
 import { initDatabase, listAlarms } from '../storage/db';
 import { syncAlarmSchedules } from '../native/alarms';
 import {
@@ -111,18 +111,19 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <I18nProvider>
-        <ErrorBoundary>
-          <StatusBar style="auto" />
-          <Stack
-            screenOptions={{
-              // Screens set their own headers; the ringing screen hides it.
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-        </ErrorBoundary>
-      </I18nProvider>
+      <AppearanceProvider>
+        <I18nProvider>
+          <ErrorBoundary>
+            <Stack
+              screenOptions={{
+                // Screens set their own headers; the ringing screen hides it.
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+          </ErrorBoundary>
+        </I18nProvider>
+      </AppearanceProvider>
     </GestureHandlerRootView>
   );
 }

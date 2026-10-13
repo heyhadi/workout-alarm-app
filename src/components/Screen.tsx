@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
-import { getSemanticTokens, type Mode } from '../../theme/helpers';
+import { type Mode } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { space } from '../../theme/tokens';
 
 interface ScreenProps {
@@ -25,7 +26,7 @@ export function Screen({
   noPadding = false,
   edges = ALL_EDGES,
 }: ScreenProps) {
-  const t = getSemanticTokens(mode);
+  const t = useTokens(mode);
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bgScreen }]} edges={edges}>
       <View

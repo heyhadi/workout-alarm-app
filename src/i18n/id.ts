@@ -186,6 +186,8 @@ export const id: Strings = {
       id: 'Indonesia',
     },
     followingPhone: (language) => `Ikut bahasa HP: ${language}`,
+    appearance: 'Tampilan',
+    appearanceShort: { system: 'Ikut HP', light: 'Terang', dark: 'Gelap' },
     readiness: 'Kesiapan alarm',
     ready: 'Siap',
     readyBody: 'Semua izin alarm udah aktif.',

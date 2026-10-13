@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PoseCameraView } from './PoseCameraView';
 import { RepProgressRing } from './RepProgressRing';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import {
   motion,
   primitives,
@@ -51,7 +51,7 @@ export function WorkoutView({
   header,
   cueOverride,
 }: WorkoutViewProps) {
-  const t = getSemanticTokens('alarm');
+  const t = useTokens('alarm');
   const strings = useStrings();
   const insets = useSafeAreaInsets();
   const { mode, count, target, framing, cameraLive } = counter;

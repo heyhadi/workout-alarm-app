@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { elevation, primitives, space, type as typeScale } from '../../theme/tokens';
 import { currentStreakDays, getAlarm } from '../storage/db';
 import { getTotalWorkouts } from '../storage/settings';
@@ -16,7 +16,7 @@ import { useStrings } from '../i18n';
  */
 export default function DoneScreen() {
   const router = useRouter();
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
   const { alarmId, repsDone, durationMs, skipped } = useLocalSearchParams<{
     alarmId: string;

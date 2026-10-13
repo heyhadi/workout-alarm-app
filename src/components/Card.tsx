@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { getSemanticTokens } from '../../theme/helpers';
-import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
+import { useTokens } from '../appearance';
+import { radius, space, type as typeScale } from '../../theme/tokens';
 
 /**
  * The day-mode building blocks shared by the alarm form and Settings:
@@ -11,7 +11,7 @@ import { primitives, radius, space, type as typeScale } from '../../theme/tokens
 
 /** Uppercase caption + card. */
 export function Section({ title, children }: { title: string; children: ReactNode }) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   return (
     <View style={styles.section}>
       <Text style={[typeScale.caption, styles.caption, { color: t.textSecondary }]}>
@@ -23,7 +23,7 @@ export function Section({ title, children }: { title: string; children: ReactNod
 }
 
 export function Card({ children }: { children: ReactNode }) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   return (
     <View
       style={[styles.card, { backgroundColor: t.bgSurface, borderColor: t.border }]}
@@ -46,7 +46,7 @@ export function Block({
   children?: ReactNode;
   style?: ViewStyle;
 }) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   return (
     <View
       style={[
@@ -67,7 +67,7 @@ export function Block({
 
 /** Title + description, the text half of a settings row. */
 export function RowText({ title, body }: { title: string; body?: string }) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   return (
     <View style={styles.rowText}>
       <Text style={[typeScale.label, { color: t.textPrimary }]}>{title}</Text>
@@ -93,7 +93,7 @@ export function Option({
   onPress: () => void;
   fill?: boolean;
 }) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   return (
     <Pressable
       accessibilityRole="radio"
@@ -102,17 +102,14 @@ export function Option({
       style={[
         fill ? styles.fill : styles.pill,
         {
-          backgroundColor: selected ? primitives.energy[50] : t.bgSurface,
-          borderColor: selected ? primitives.energy[600] : t.border,
+          backgroundColor: selected ? t.accentSoft : t.bgSurface,
+          borderColor: selected ? t.accentStrong : t.border,
         },
       ]}
     >
       <Text
         numberOfLines={1}
-        style={[
-          typeScale.body,
-          { color: selected ? primitives.energy[600] : t.textPrimary },
-        ]}
+        style={[typeScale.body, { color: selected ? t.accentStrong : t.textPrimary }]}
       >
         {label}
       </Text>

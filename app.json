@@ -71,7 +71,7 @@
     ],
     "scheme": "workoutalarm",
     "slug": "workout-alarm-app",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "version": "1.0.0",
     "web": {
       "favicon": "./assets/favicon.png"

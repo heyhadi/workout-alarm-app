@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import {
   components,
   elevation,
@@ -35,7 +35,7 @@ export function AlarmCard({
   onPress,
   onDelete,
 }: AlarmCardProps) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
 
   const renderRightActions = () => (

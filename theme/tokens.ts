@@ -35,6 +35,9 @@ import type { FontVariant } from 'react-native';
 
 export type Mode = 'day' | 'alarm';
 
+/** Light or dark appearance for day mode (alarm mode is always dark). */
+export type Scheme = 'light' | 'dark';
+
 /** Mutable on purpose: RN's TextStyle wants FontVariant[], not readonly. */
 const tabularNums: FontVariant[] = ['tabular-nums'];
 
@@ -52,6 +55,26 @@ export const semantic = {
     stateLocked: primitives.warning[500],
     stateDone: primitives.success[500],
     stateDanger: primitives.danger[500],
+    /** Selected option fill, wheel band, soft badges. */
+    accentSoft: primitives.energy[50],
+    /** Selected option border/text, accent links. */
+    accentStrong: primitives.energy[600],
+  },
+  /** Day screens in dark appearance: the alarm navy, softer accents. */
+  dayDark: {
+    bgScreen: primitives.ink[950],
+    bgSurface: primitives.surfaceDark,
+    textPrimary: primitives.white,
+    textSecondary: '#C2CEDF',
+    textOnAccent: primitives.white,
+    border: primitives.ink[700],
+    actionPrimary: primitives.energy[500],
+    actionPrimaryPressed: primitives.energy[600],
+    stateLocked: primitives.warning[500],
+    stateDone: primitives.success[500],
+    stateDanger: primitives.danger[500],
+    accentSoft: 'rgba(255, 107, 26, 0.16)',
+    accentStrong: primitives.energy[400],
   },
   alarm: {
     bgScreen: primitives.ink[950],
@@ -65,10 +88,12 @@ export const semantic = {
     stateLocked: primitives.warning[500],
     stateDone: primitives.success[500],
     stateDanger: primitives.danger[500],
+    accentSoft: 'rgba(255, 107, 26, 0.16)',
+    accentStrong: primitives.energy[400],
   },
 } as const;
 
-export type SemanticTokens = (typeof semantic)[Mode];
+export type SemanticTokens = (typeof semantic)[keyof typeof semantic];
 
 /** Font families — load via expo-font before first render. */
 export const fonts = {

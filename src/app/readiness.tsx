@@ -4,7 +4,7 @@ import { Screen } from '../components/Screen';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
 import { allow, markAutostartDone } from '../native/readiness';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { ChecklistItem, ItemState } from '../readiness/checklist';
 import { useStrings } from '../i18n';
@@ -23,7 +23,7 @@ const STATE_UI: Record<ItemState, { color: string; mark: string }> = {
  */
 export default function ReadinessScreen() {
   const router = useRouter();
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
   const { items, pending, refresh } = useAlarmReadiness();
 
@@ -115,15 +115,14 @@ export default function ReadinessScreen() {
 }
 
 function RowButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const t = useTokens('day');
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[styles.button, { borderColor: primitives.energy[600] }]}
+      style={[styles.button, { borderColor: t.accentStrong }]}
     >
-      <Text style={[typeScale.bodySmall, { color: primitives.energy[600] }]}>
-        {label}
-      </Text>
+      <Text style={[typeScale.bodySmall, { color: t.accentStrong }]}>{label}</Text>
     </Pressable>
   );
 }

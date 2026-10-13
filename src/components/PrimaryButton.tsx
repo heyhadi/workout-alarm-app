@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { components, radius } from '../../theme/tokens';
 
 interface PrimaryButtonProps {
@@ -18,7 +18,7 @@ export function PrimaryButton({
   onPress,
   disabled = false,
 }: PrimaryButtonProps) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   return (
     <Pressable
       accessibilityRole="button"

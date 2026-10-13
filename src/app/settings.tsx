@@ -5,12 +5,13 @@ import { Screen } from '../components/Screen';
 import { Block, RowText, Section } from '../components/Card';
 import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
 import { systemLanguage, useLanguageSetting, useStrings } from '../i18n';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useAppearanceSetting, useTokens } from '../appearance';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
 import {
   getSettings,
   setEmergencyExit,
   setLockInMinutes,
+  type AppearanceSetting,
   type LanguageSetting,
 } from '../storage/settings';
 import { STEPS_PER_REP } from '../native/steps';
@@ -27,7 +28,7 @@ function Segments<T extends string | number>({
   selected: T;
   onSelect: (value: T) => void;
 }) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   return (
     <View style={styles.segments}>
       {options.map((option, index) => {
@@ -41,14 +42,14 @@ function Segments<T extends string | number>({
             style={[
               styles.segment,
               index > 0 && { borderLeftWidth: 1, borderLeftColor: t.border },
-              isSelected && { backgroundColor: primitives.energy[50] },
+              isSelected && { backgroundColor: t.accentSoft },
             ]}
           >
             <Text
               numberOfLines={1}
               style={[
                 typeScale.body,
-                { color: isSelected ? primitives.energy[600] : t.textPrimary },
+                { color: isSelected ? t.accentStrong : t.textPrimary },
               ]}
             >
               {option.label}
@@ -66,11 +67,12 @@ function Segments<T extends string | number>({
  * default. Every option here is live — no placeholders.
  */
 export default function SettingsScreen() {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
   const s = strings.settings;
   const e = strings.emergency;
   const [language, setLanguage] = useLanguageSetting();
+  const [appearance, setAppearance] = useAppearanceSetting();
   const router = useRouter();
   const { items, pending } = useAlarmReadiness();
   // Synchronous MMKV reads belong in lazy initializers, not effects.
@@ -106,6 +108,19 @@ export default function SettingsScreen() {
             {s.followingPhone(s.languageOptions[systemLanguage()])}
           </Text>
         )}
+
+        <Section title={s.appearance}>
+          <Segments<AppearanceSetting>
+            selected={appearance}
+            onSelect={setAppearance}
+            options={(['system', 'light', 'dark'] as AppearanceSetting[]).map(
+              (value) => ({
+                value,
+                label: s.appearanceShort[value],
+              }),
+            )}
+          />
+        </Section>
 
         <Section title={s.readiness}>
           <Pressable

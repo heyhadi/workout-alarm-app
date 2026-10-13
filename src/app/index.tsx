@@ -7,7 +7,7 @@ import { Screen } from '../components/Screen';
 import { UpdateCard } from '../components/UpdateCard';
 import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
 import { isOnboardingDone, markOnboardingDone } from '../storage/settings';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
 import { timeUntil } from '../workout/scheduling';
 import { useStrings } from '../i18n';
@@ -32,7 +32,7 @@ import type { Alarm } from '../types';
  */
 export default function AlarmListScreen() {
   const router = useRouter();
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [streak, setStreak] = useState(0);
   const [nextFire, setNextFire] = useState<number | undefined>(undefined);
@@ -113,8 +113,8 @@ export default function AlarmListScreen() {
           {strings.alarms.title}
         </Text>
         {streak > 0 && (
-          <View style={[styles.streak, { backgroundColor: primitives.energy[50] }]}>
-            <Text style={[typeScale.label, { color: primitives.energy[600] }]}>
+          <View style={[styles.streak, { backgroundColor: t.accentSoft }]}>
+            <Text style={[typeScale.label, { color: t.accentStrong }]}>
               {`🔥 ${strings.streak(streak)}`}
             </Text>
           </View>
@@ -147,12 +147,12 @@ export default function AlarmListScreen() {
           style={[
             styles.notReady,
             {
-              backgroundColor: primitives.energy[50],
-              borderColor: primitives.energy[600],
+              backgroundColor: t.accentSoft,
+              borderColor: t.accentStrong,
             },
           ]}
         >
-          <Text style={[typeScale.label, { color: primitives.energy[600] }]}>
+          <Text style={[typeScale.label, { color: t.accentStrong }]}>
             {strings.alarms.notReadyTitle}
           </Text>
           <Text style={[typeScale.bodySmall, { color: t.textPrimary }]}>

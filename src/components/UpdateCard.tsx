@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { getSemanticTokens } from '../../theme/helpers';
-import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
+import { useTokens } from '../appearance';
+import { radius, space, type as typeScale } from '../../theme/tokens';
 import { checkForUpdate, installUpdate } from '../native/updates';
 import type { AvailableUpdate } from '../updates/latestRelease';
 import { useStrings } from '../i18n';
@@ -14,7 +14,7 @@ type InstallState = 'idle' | 'downloading' | 'needs-permission' | 'failed';
  * or on a local build. Never shown on the ringing screen.
  */
 export function UpdateCard() {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   const [state, setState] = useState<InstallState>('idle');
@@ -67,9 +67,9 @@ export function UpdateCard() {
         accessibilityRole="button"
         disabled={state === 'downloading'}
         onPress={handleInstall}
-        style={[styles.button, { borderColor: primitives.energy[600] }]}
+        style={[styles.button, { borderColor: t.accentStrong }]}
       >
-        <Text style={[typeScale.label, { color: primitives.energy[600] }]}>
+        <Text style={[typeScale.label, { color: t.accentStrong }]}>
           {strings.update.install}
         </Text>
       </Pressable>

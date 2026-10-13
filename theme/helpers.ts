@@ -2,13 +2,24 @@
  * Pure helpers over the design tokens. No React Native imports —
  * unit-tested with vitest.
  */
-import { primitives, semantic, type Mode, type SemanticTokens } from './tokens';
+import {
+  primitives,
+  semantic,
+  type Mode,
+  type Scheme,
+  type SemanticTokens,
+} from './tokens';
 
-export type { Mode, SemanticTokens };
+export type { Mode, Scheme, SemanticTokens };
 
-/** Semantic token set for the given UI mode. */
-export function getSemanticTokens(mode: Mode): SemanticTokens {
-  return semantic[mode];
+/**
+ * Semantic token set for a UI mode. Day mode follows the light/dark
+ * scheme; the alarm (workout) screens are always dark. In components use
+ * `useTokens()` (src/appearance), which supplies the current scheme.
+ */
+export function getSemanticTokens(mode: Mode, scheme: Scheme = 'light'): SemanticTokens {
+  if (mode === 'alarm') return semantic.alarm;
+  return scheme === 'dark' ? semantic.dayDark : semantic.day;
 }
 
 /** True for `#RGB`, `#RRGGBB` (case-insensitive). */

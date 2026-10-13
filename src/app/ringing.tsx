@@ -7,7 +7,7 @@ import { EmergencyExit } from '../components/EmergencyExit';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStrings } from '../i18n';
 import { useWorkoutCounter } from '../hooks/useWorkoutCounter';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { type as typeScale } from '../../theme/tokens';
 import { isPoseModuleAvailable, stopPoseDetection } from '../native/pose';
 import {
@@ -61,7 +61,7 @@ function alarmFromRinging(
  */
 export default function RingingScreen() {
   const { alarmId } = useLocalSearchParams<{ alarmId: string }>();
-  const t = getSemanticTokens('alarm');
+  const t = useTokens('alarm');
   const strings = useStrings();
   const [loaded, setLoaded] = useState<{ alarm: Alarm; saved: boolean } | null>(null);
   const [startedAt] = useState(() => Date.now());

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import { useStrings } from '../i18n';
 import {
@@ -37,7 +37,7 @@ export function EmergencyExit({
   onExit,
   linkBottom,
 }: EmergencyExitProps) {
-  const t = getSemanticTokens('alarm');
+  const t = useTokens('alarm');
   const strings = useStrings();
   const e = strings.emergency;
   const [available, setAvailable] = useState(false);

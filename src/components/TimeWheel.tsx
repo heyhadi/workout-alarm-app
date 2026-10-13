@@ -9,8 +9,8 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { selectionAsync } from 'expo-haptics';
-import { getSemanticTokens } from '../../theme/helpers';
-import { primitives, radius, type as typeScale } from '../../theme/tokens';
+import { useTokens } from '../appearance';
+import { radius, type as typeScale } from '../../theme/tokens';
 import { useStrings } from '../i18n';
 
 const ITEM_HEIGHT = 58;
@@ -34,7 +34,7 @@ interface ColumnProps {
  * virtualization. Ticks once per row crossed.
  */
 function WheelColumn({ values, selected, onChange, label }: ColumnProps) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const scrollRef = useRef<ScrollView>(null);
   // Row under the highlight while scrolling — drives styling and haptics.
   const [centered, setCentered] = useState(selected);
@@ -125,7 +125,7 @@ interface TimeWheelProps {
  * on the selected row. Replaces the two-step clock dialog.
  */
 export function TimeWheel({ value, onChange }: TimeWheelProps) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
   const [h, m] = value.split(':').map(Number);
   const hour = Number.isFinite(h) ? h : 0;
@@ -135,7 +135,7 @@ export function TimeWheel({ value, onChange }: TimeWheelProps) {
     <View style={styles.wheel}>
       <View
         pointerEvents="none"
-        style={[styles.band, { backgroundColor: primitives.energy[50] }]}
+        style={[styles.band, { backgroundColor: t.accentSoft }]}
       />
       <WheelColumn
         values={HOURS}

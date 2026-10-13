@@ -74,3 +74,17 @@ describe('hexToRgba', () => {
     expect(() => hexToRgba('#FF6B1A', 2)).toThrow();
   });
 });
+
+describe('dark appearance', () => {
+  it('switches day mode to the dark set, never the alarm screen', () => {
+    expect(getSemanticTokens('day', 'light').bgSurface).toBe(primitives.white);
+    expect(getSemanticTokens('day', 'dark').bgSurface).toBe(primitives.surfaceDark);
+    expect(getSemanticTokens('alarm', 'light')).toBe(getSemanticTokens('alarm', 'dark'));
+  });
+
+  it('defines every token in every set', () => {
+    const keys = Object.keys(getSemanticTokens('day')).sort();
+    expect(Object.keys(getSemanticTokens('day', 'dark')).sort()).toEqual(keys);
+    expect(Object.keys(getSemanticTokens('alarm')).sort()).toEqual(keys);
+  });
+});

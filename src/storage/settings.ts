@@ -22,6 +22,7 @@ const Keys = {
   totalWorkouts: 'totalWorkouts',
   autostartConfirmed: 'autostartConfirmed',
   language: 'language',
+  appearance: 'appearance',
 } as const;
 
 const DEFAULTS: AppSettings = {
@@ -101,4 +102,16 @@ export function getLanguageSetting(): LanguageSetting {
 
 export function setLanguageSetting(setting: LanguageSetting): void {
   storage.set(Keys.language, setting);
+}
+
+/** Light/dark: follow the phone ("system"), or a fixed choice. */
+export type AppearanceSetting = 'system' | 'light' | 'dark';
+
+export function getAppearanceSetting(): AppearanceSetting {
+  const value = storage.getString(Keys.appearance);
+  return value === 'light' || value === 'dark' ? value : 'system';
+}
+
+export function setAppearanceSetting(setting: AppearanceSetting): void {
+  storage.set(Keys.appearance, setting);
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { getSemanticTokens } from '../../theme/helpers';
-import { primitives, space, type as typeScale } from '../../theme/tokens';
+import { useTokens } from '../appearance';
+import { space, type as typeScale } from '../../theme/tokens';
 import type { Difficulty, ExerciseType } from '../types';
 import { STEPS_PER_REP } from '../native/steps';
 import { Block, Option, OptionRow, RowText, Section } from './Card';
@@ -48,7 +48,7 @@ interface AlarmFormProps {
  * No free-text reps to regret at 6 a.m. — presets only.
  */
 export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const strings = useStrings();
   const [value, setValue] = useState<AlarmFormValue>(initial);
   // Clock for the "Rings in…" line; ticks so the countdown stays honest
@@ -85,11 +85,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
           <Block first>
             <TimeWheel value={value.time} onChange={(time) => set('time', time)} />
             <Text
-              style={[
-                typeScale.label,
-                styles.ringsIn,
-                { color: primitives.energy[600] },
-              ]}
+              style={[typeScale.label, styles.ringsIn, { color: t.accentStrong }]}
               accessibilityLiveRegion="polite"
             >
               {strings.form.ringsIn(ringsIn)}

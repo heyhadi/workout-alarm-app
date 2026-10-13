@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../components/Screen';
 import { useStrings } from '../../i18n';
 import { AlarmForm, type AlarmFormValue } from '../../components/AlarmForm';
-import { getSemanticTokens } from '../../../theme/helpers';
+import { useTokens } from '../../appearance';
 import { type as typeScale } from '../../../theme/tokens';
 import { getAlarm, upsertAlarm } from '../../storage/db';
 import { applyAlarmSchedule } from '../../native/alarms';
@@ -17,7 +17,7 @@ export default function EditAlarmScreen() {
   const router = useRouter();
   const strings = useStrings();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const t = getSemanticTokens('day');
+  const t = useTokens('day');
   const [alarm, setAlarm] = useState<Alarm | null>(null);
 
   useEffect(() => {

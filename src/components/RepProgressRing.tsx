@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
 import { components, motion, type as typeScale } from '../../theme/tokens';
 
 interface RepProgressRingProps {
@@ -22,7 +22,7 @@ export function RepProgressRing({
   target,
   size = components.repRing.size,
 }: RepProgressRingProps) {
-  const t = getSemanticTokens('alarm');
+  const t = useTokens('alarm');
   const { strokeWidth } = components.repRing;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
