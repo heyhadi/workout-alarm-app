@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useCameraPermissions } from 'expo-camera';
 import { Screen } from '../components/Screen';
+import { PoseCameraView } from '../components/PoseCameraView';
 import { RepProgressRing } from '../components/RepProgressRing';
 import { FormCueBanner } from '../components/FormCueBanner';
 import { getSemanticTokens } from '../../theme/helpers';
@@ -24,6 +25,7 @@ import { getAlarm, recordSession } from '../storage/db';
 import { incrementTotalWorkouts } from '../storage/settings';
 import { EXERCISE_LABELS } from '../components/ExerciseChip';
 import { RepCounter, EXERCISE_COUNTER_CONFIGS } from '../workout/repCounter';
+import { EXERCISE_INSTRUCTIONS } from '../workout/exerciseInstructions';
 import type { Alarm } from '../types';
 
 const DEMO_TICK_MS = 120;
@@ -151,7 +153,9 @@ export default function RingingScreen() {
             );
           });
         })
-        .catch(() => undefined);
+        .catch(() => {
+          setCue('Camera failed to start — keep moving, counting by motion');
+        });
       return () => {
         unsubRep?.();
         unsubLost?.();
@@ -238,9 +242,25 @@ export default function RingingScreen() {
           <RepProgressRing done={reps} target={alarm.repTarget} />
         </View>
 
+        <View
+          style={[styles.instructions, { backgroundColor: 'rgba(255,255,255,0.06)' }]}
+        >
+          <Text style={[typeScale.bodySmall, { color: t.textPrimary }]}>
+            {EXERCISE_INSTRUCTIONS[alarm.exercise].setup}
+          </Text>
+          <Text
+            style={[
+              typeScale.bodySmall,
+              { color: t.textPrimary, marginTop: space.xs },
+            ]}
+          >
+            {EXERCISE_INSTRUCTIONS[alarm.exercise].howTo}
+          </Text>
+        </View>
+
         <View style={styles.cameraWrap}>
           {permission?.granted ? (
-            <CameraView style={styles.camera} facing="front" />
+            <PoseCameraView style={styles.camera} />
           ) : (
             <View style={[styles.camera, styles.cameraPlaceholder]}>
               <Text style={[typeScale.body, { color: t.textSecondary }]}>
@@ -277,6 +297,12 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 16,
     overflow: 'hidden',
+  },
+  instructions: {
+    width: '100%',
+    borderRadius: 12,
+    padding: space.md,
+    marginBottom: space.md,
   },
   camera: { flex: 1 },
   cameraPlaceholder: {
