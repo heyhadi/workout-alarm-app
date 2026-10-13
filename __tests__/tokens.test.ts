@@ -79,7 +79,9 @@ describe('dark appearance', () => {
   it('switches day mode to the dark set, never the alarm screen', () => {
     expect(getSemanticTokens('day', 'light').bgSurface).toBe(primitives.white);
     expect(getSemanticTokens('day', 'dark').bgSurface).toBe(primitives.surfaceDark);
-    expect(getSemanticTokens('alarm', 'light')).toBe(getSemanticTokens('alarm', 'dark'));
+    expect(getSemanticTokens('alarm', 'light')).toBe(
+      getSemanticTokens('alarm', 'dark'),
+    );
   });
 
   it('defines every token in every set', () => {

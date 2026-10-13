@@ -189,6 +189,7 @@ function RingingWorkout({
           repsDone: String(done),
           durationMs: String(durationMs),
           skipped: skipped ? '1' : '0',
+          finishedAt: String(finishedAt),
         },
       });
     },
