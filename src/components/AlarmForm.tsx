@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { Difficulty, ExerciseType } from '../types';
 import { ExerciseChip, EXERCISE_LABELS } from './ExerciseChip';
 import { PrimaryButton } from './PrimaryButton';
+import { TimeWheel } from './TimeWheel';
+import { formatTimeUntil, nextFireTimeMs } from '../workout/scheduling';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const REP_PRESETS = [10, 20, 30];
 const DIFFICULTIES: Difficulty[] = ['easy', 'standard', 'hard'];
 const LOCK_IN_OPTIONS = [15, 30, 45, 60];
+const PRESET_TIMES = ['05:30', '06:00', '06:30', '07:00'];
+const COUNTDOWN_REFRESH_MS = 30_000;
 
 export interface AlarmFormValue {
   time: string;
@@ -33,14 +34,20 @@ interface AlarmFormProps {
 
 /**
  * Screen 2 — Create / edit alarm form.
- * Time, repeat days, exercise picker (chips), rep presets, difficulty,
+ * Time (inline wheel + live "rings in" countdown), repeat days, exercise picker (chips), rep presets, difficulty,
  * ringtone, backup exercise, lock-in timing. No free-text reps to regret
  * at 6 a.m. — presets only, matching the mockup.
  */
 export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
   const t = getSemanticTokens('day');
   const [value, setValue] = useState<AlarmFormValue>(initial);
-  const [showPicker, setShowPicker] = useState(false);
+  // Clock for the "Rings in…" line; ticks so the countdown stays honest
+  // while the form sits open.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), COUNTDOWN_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   const set = <K extends keyof AlarmFormValue>(key: K, v: AlarmFormValue[K]) =>
     setValue((prev) => ({ ...prev, [key]: v }));
@@ -57,50 +64,47 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
     onSubmit(value);
   };
 
-  const timeToDate = (time: string): Date => {
-    const [h, m] = time.split(':').map(Number);
-    const d = new Date();
-    d.setHours(h || 0, m || 0, 0, 0);
-    return d;
-  };
-
-  const handleTimeChange = (event: DateTimePickerEvent, date?: Date) => {
-    setShowPicker(false);
-    if (event.type === 'set' && date) {
-      const hh = String(date.getHours()).padStart(2, '0');
-      const mm = String(date.getMinutes()).padStart(2, '0');
-      set('time', `${hh}:${mm}`);
-    }
-  };
+  const ringsIn = formatTimeUntil(nextFireTimeMs(value.time, value.days, now), now);
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={[typeScale.caption, { color: t.textSecondary }]}>Time</Text>
-      <Pressable
-        onPress={() => setShowPicker(true)}
-        style={[
-          styles.input,
-          {
-            backgroundColor: t.bgSurface,
-            borderColor: t.border,
-            justifyContent: 'center',
-          },
-        ]}
+      <TimeWheel value={value.time} onChange={(time) => set('time', time)} />
+      <Text
+        style={[typeScale.label, styles.ringsIn, { color: primitives.energy[600] }]}
+        accessibilityLiveRegion="polite"
       >
-        <Text style={[typeScale.display, { fontSize: 40, color: t.textPrimary }]}>
-          {value.time}
-        </Text>
-      </Pressable>
-      {showPicker && (
-        <DateTimePicker
-          value={timeToDate(value.time)}
-          mode="time"
-          is24Hour
-          display="default"
-          minuteInterval={1}
-          onChange={handleTimeChange}
-        />
-      )}
+        {`Rings in ${ringsIn}`}
+      </Text>
+      <View style={styles.row}>
+        {PRESET_TIMES.map((time) => {
+          const active = value.time === time;
+          return (
+            <Pressable
+              key={time}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              onPress={() => set('time', time)}
+              style={[
+                styles.preset,
+                {
+                  backgroundColor: active ? primitives.energy[50] : t.bgSurface,
+                  borderColor: active ? primitives.energy[600] : t.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  typeScale.bodySmall,
+                  { color: active ? primitives.energy[600] : t.textPrimary },
+                ]}
+              >
+                {time}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
         Repeat
@@ -290,6 +294,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
 const styles = StyleSheet.create({
   scroll: { paddingBottom: space.xl },
   section: { marginTop: space.lg, marginBottom: space.sm },
+  ringsIn: { marginTop: space.sm, marginBottom: space.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap' },
   input: {
     borderWidth: 1,
