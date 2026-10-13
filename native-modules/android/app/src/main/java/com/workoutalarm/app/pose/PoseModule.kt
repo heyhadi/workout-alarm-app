@@ -15,7 +15,9 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.PoseDetection
 import com.google.mlkit.vision.pose.PoseDetector
-import com.google.mlkit.vision.pose.PoseDetectorOptions
+// ML Kit 18.x moved the concrete options into the .defaults subpackage
+// (verified against the official API reference).
+import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.acos
