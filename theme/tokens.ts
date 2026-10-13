@@ -59,6 +59,10 @@ export const semantic = {
     accentSoft: primitives.energy[50],
     /** Selected option border/text, accent links. */
     accentStrong: primitives.energy[600],
+    /** Selected option/segment: soft orange tint, orange text and border. */
+    selectedBg: primitives.energy[50],
+    selectedFg: primitives.energy[600],
+    selectedBorder: primitives.energy[600],
   },
   /** Day screens in dark appearance: the alarm navy, softer accents. */
   dayDark: {
@@ -77,6 +81,10 @@ export const semantic = {
     // turns muddy brown on navy, so dark mode lifts instead of tints.
     accentSoft: '#22396A',
     accentStrong: primitives.energy[400],
+    // Selected = solid orange with white text, like the primary button.
+    selectedBg: primitives.energy[500],
+    selectedFg: primitives.white,
+    selectedBorder: primitives.energy[500],
   },
   alarm: {
     bgScreen: primitives.ink[950],
@@ -92,6 +100,9 @@ export const semantic = {
     stateDanger: primitives.danger[500],
     accentSoft: 'rgba(255, 107, 26, 0.16)',
     accentStrong: primitives.energy[400],
+    selectedBg: primitives.energy[500],
+    selectedFg: primitives.white,
+    selectedBorder: primitives.energy[500],
   },
 } as const;
 

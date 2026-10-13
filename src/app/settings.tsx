@@ -42,14 +42,14 @@ function Segments<T extends string | number>({
             style={[
               styles.segment,
               index > 0 && { borderLeftWidth: 1, borderLeftColor: t.border },
-              isSelected && { backgroundColor: t.accentSoft },
+              isSelected && { backgroundColor: t.selectedBg },
             ]}
           >
             <Text
               numberOfLines={1}
               style={[
                 typeScale.body,
-                { color: isSelected ? t.accentStrong : t.textPrimary },
+                { color: isSelected ? t.selectedFg : t.textPrimary },
               ]}
             >
               {option.label}

@@ -135,7 +135,7 @@ export function TimeWheel({ value, onChange }: TimeWheelProps) {
     <View style={styles.wheel}>
       <View
         pointerEvents="none"
-        style={[styles.band, { backgroundColor: t.accentSoft }]}
+        style={[styles.band, { backgroundColor: t.selectedBg }]}
       />
       <WheelColumn
         values={HOURS}

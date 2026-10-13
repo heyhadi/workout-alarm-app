@@ -102,14 +102,14 @@ export function Option({
       style={[
         fill ? styles.fill : styles.pill,
         {
-          backgroundColor: selected ? t.accentSoft : t.bgSurface,
-          borderColor: selected ? t.accentStrong : t.border,
+          backgroundColor: selected ? t.selectedBg : t.bgSurface,
+          borderColor: selected ? t.selectedBorder : t.border,
         },
       ]}
     >
       <Text
         numberOfLines={1}
-        style={[typeScale.body, { color: selected ? t.accentStrong : t.textPrimary }]}
+        style={[typeScale.body, { color: selected ? t.selectedFg : t.textPrimary }]}
       >
         {label}
       </Text>
