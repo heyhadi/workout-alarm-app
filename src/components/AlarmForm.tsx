@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { Difficulty, ExerciseType } from '../types';
@@ -41,7 +44,7 @@ function isValidTime(value: string): boolean {
 export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
   const t = getSemanticTokens('day');
   const [value, setValue] = useState<AlarmFormValue>(initial);
-  const [timeError, setTimeError] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   const set = <K extends keyof AlarmFormValue>(key: K, v: AlarmFormValue[K]) =>
     setValue((prev) => ({ ...prev, [key]: v }));
@@ -55,39 +58,51 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
     );
 
   const handleSubmit = () => {
-    if (!isValidTime(value.time)) {
-      setTimeError(true);
-      return;
-    }
-    setTimeError(false);
     onSubmit(value);
+  };
+
+  const timeToDate = (time: string): Date => {
+    const [h, m] = time.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h || 0, m || 0, 0, 0);
+    return d;
+  };
+
+  const handleTimeChange = (event: DateTimePickerEvent, date?: Date) => {
+    setShowPicker(false);
+    if (event.type === 'set' && date) {
+      const hh = String(date.getHours()).padStart(2, '0');
+      const mm = String(date.getMinutes()).padStart(2, '0');
+      set('time', `${hh}:${mm}`);
+    }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Text style={[typeScale.caption, { color: t.textSecondary }]}>Time</Text>
-      <TextInput
-        value={value.time}
-        onChangeText={(text) => set('time', text)}
-        placeholder="06:30"
-        placeholderTextColor={t.textSecondary}
-        keyboardType="numbers-and-punctuation"
-        maxLength={5}
+      <Pressable
+        onPress={() => setShowPicker(true)}
         style={[
           styles.input,
           {
             backgroundColor: t.bgSurface,
-            borderColor: timeError ? t.stateDanger : t.border,
-            color: t.textPrimary,
+            borderColor: t.border,
+            justifyContent: 'center',
           },
-          typeScale.display,
-          { fontSize: 40 },
         ]}
-      />
-      {timeError && (
-        <Text style={[typeScale.bodySmall, { color: t.stateDanger }]}>
-          Use 24-hour HH:MM, e.g. 06:30
+      >
+        <Text style={[typeScale.display, { fontSize: 40, color: t.textPrimary }]}>
+          {value.time}
         </Text>
+      </Pressable>
+      {showPicker && (
+        <DateTimePicker
+          value={timeToDate(value.time)}
+          mode="time"
+          is24Hour
+          display="default"
+          onChange={handleTimeChange}
+        />
       )}
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
