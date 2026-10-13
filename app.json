@@ -54,7 +54,8 @@
       "./plugins/withRingingService",
       "./plugins/withBootReceiver",
       "./plugins/withLockTask",
-      "./plugins/withWorkoutAlarmPackage"
+      "./plugins/withWorkoutAlarmPackage",
+      "./plugins/withReleaseSigning"
     ],
     "scheme": "workoutalarm",
     "slug": "workout-alarm-app",
