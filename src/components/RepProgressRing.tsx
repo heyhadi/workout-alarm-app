@@ -1,28 +1,54 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { getSemanticTokens } from '../../theme/helpers';
-import { components, primitives, type as typeScale } from '../../theme/tokens';
+import { components, motion, type as typeScale } from '../../theme/tokens';
 
 interface RepProgressRingProps {
   done: number;
   target: number;
+  /** Diameter in dp. Defaults to the token size. */
+  size?: number;
 }
 
 /**
- * Ring progress: energy-500 arc on a surface-dark track, rep-counter type
- * ("13 / 20") centered. A completed rep pulses the ring once — feedback
- * visible without reading. Alarm mode only.
+ * Ring progress: energy-500 arc on a surface-dark track, the rep count
+ * centered (the caller shows "of N" beside it). A completed rep pulses the
+ * ring once — feedback visible from across the room without reading.
+ * Alarm mode only.
  */
-export function RepProgressRing({ done, target }: RepProgressRingProps) {
+export function RepProgressRing({
+  done,
+  target,
+  size = components.repRing.size,
+}: RepProgressRingProps) {
   const t = getSemanticTokens('alarm');
-  const { size, strokeWidth } = components.repRing;
+  const { strokeWidth } = components.repRing;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = target > 0 ? Math.min(done / target, 1) : 0;
+  const countSize = Math.round(size * 0.4);
+
+  const [scale] = useState(() => new Animated.Value(1));
+  useEffect(() => {
+    if (done === 0) return;
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.08,
+        duration: motion.fast,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: motion.slow,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [done, scale]);
 
   return (
-    <View
-      style={styles.wrap}
+    <Animated.View
+      style={[styles.wrap, { transform: [{ scale }] }]}
       accessibilityRole="progressbar"
       accessibilityValue={{ now: done, max: target }}
     >
@@ -49,12 +75,16 @@ export function RepProgressRing({ done, target }: RepProgressRingProps) {
         />
       </Svg>
       <View style={styles.center}>
-        <Text style={[typeScale.repCounter, { color: t.textPrimary }]}>{done}</Text>
-        <Text style={[typeScale.heading, { color: primitives.energy[500] }]}>
-          {`of ${target}`}
+        <Text
+          style={[
+            typeScale.repCounter,
+            { color: t.textPrimary, fontSize: countSize, lineHeight: countSize },
+          ]}
+        >
+          {done}
         </Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -62,6 +92,10 @@ const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
   center: {
     position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

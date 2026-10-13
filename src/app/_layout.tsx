@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AppState, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
@@ -27,6 +27,8 @@ SplashScreen.preventAutoHideAsync();
  */
 export default function RootLayout() {
   const router = useRouter();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_800ExtraBold,
     PlusJakartaSans_700Bold,
@@ -40,18 +42,26 @@ export default function RootLayout() {
     });
   }, []);
 
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
   // If the app was launched (or woken) by the alarm's full-screen intent,
   // route straight to the workout screen. The native side consumes the
   // intent, so a second read won't re-route. Falls back to asking the
   // ringing service directly, in case the intent was missed.
   useEffect(() => {
     if (!isRingingModuleAvailable()) return;
-    const routeToRinging = (intent: {
-      alarmId: string;
-      exercise: string;
-      repTarget: number;
-    } | null) => {
-      if (intent) {
+    const routeToRinging = (
+      intent: {
+        alarmId: string;
+        exercise: string;
+        repTarget: number;
+      } | null,
+    ) => {
+      // Already on the workout screen (e.g. the phone woke up mid-set):
+      // re-routing would remount it and reset the rep count.
+      if (intent && pathnameRef.current !== '/ringing') {
         router.replace({
           pathname: '/ringing',
           params: { alarmId: intent.alarmId },

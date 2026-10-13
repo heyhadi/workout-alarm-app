@@ -1,5 +1,6 @@
 package com.workoutalarm.app.pose
 
+import android.view.WindowManager
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -15,13 +16,14 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.pose.Pose
 import com.google.mlkit.vision.pose.PoseDetection
 import com.google.mlkit.vision.pose.PoseDetector
+import com.google.mlkit.vision.pose.PoseLandmark
 // ML Kit 18.x moved the concrete options into the .defaults subpackage
 // (verified against the official API reference).
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import java.util.concurrent.Executors
-import kotlin.math.abs
 import kotlin.math.acos
 import kotlin.math.sqrt
 
@@ -29,11 +31,15 @@ import kotlin.math.sqrt
  * PoseModule — on-device rep verification (CameraX + ML Kit Pose Detection).
  *
  * Frames NEVER cross the bridge: only rep events do. Each analyzed frame
- * yields one joint angle for the active exercise; a small state machine
- * (mirroring src/workout/repCounter.ts) counts only full-range,
- * human-tempo reps. Emits:
+ * yields one joint angle for the active exercise, measured on whichever
+ * side of the body the camera sees best; a small state machine (mirroring
+ * src/workout/repCounter.ts) counts only full-range, human-tempo reps, and
+ * only while the joints it needs are in frame. Emits:
  *  - `onRepCounted` { reps, total, exercise } per verified rep,
- *  - `onPoseLost`   { reason } when no body is visible.
+ *  - `onFraming`    { state } when framing changes: in_frame | partial | none.
+ *
+ * Keeps the screen on while detection runs: a propped-up phone must not
+ * time out mid-set.
  *
  * Thresholds mirror EXERCISE_COUNTER_CONFIGS in src/workout/repCounter.ts —
  * keep the two in sync; the TS copy exists for tests and the demo fallback.
@@ -55,8 +61,12 @@ class PoseModule(reactContext: ReactApplicationContext) :
   // Rep state machine (mirrors the TS RepCounter).
   private var phase: Int = PHASE_UP
   private var cycleStartMs: Long = 0L
-  private var lastPoseMs: Long = 0L
-  private var poseLostEmitted = false
+
+  // Framing: last emitted state, plus a candidate that must hold for a
+  // moment before it is emitted (no flicker at the edge of the frame).
+  private var framing: Int = FRAMING_NONE
+  private var pendingFraming: Int = FRAMING_NONE
+  private var pendingSinceMs: Long = 0L
 
   @ReactMethod
   fun startPoseDetection(exercise: String, repTarget: Double, promise: Promise) {
@@ -65,6 +75,8 @@ class PoseModule(reactContext: ReactApplicationContext) :
       this.repTarget = repTarget.toInt()
       this.total = 0
       resetCycle()
+      framing = FRAMING_NONE
+      pendingFraming = FRAMING_NONE
 
       // ML Kit 18.x: base SDK uses PoseDetectorOptions (the old
       // AccuratePoseDetectorOptions moved to the separate
@@ -106,6 +118,7 @@ class PoseModule(reactContext: ReactApplicationContext) :
             androidx.camera.core.CameraSelector.DEFAULT_FRONT_CAMERA,
             *useCases.toTypedArray()
           )
+          activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } catch (e: Exception) {
           promise.reject("BIND_FAILED", "Camera bind failed: ${e.message}", e)
           return@addListener
@@ -123,6 +136,11 @@ class PoseModule(reactContext: ReactApplicationContext) :
       cameraProvider?.unbindAll()
       detector?.close()
       detector = null
+      reactApplicationContext.currentActivity?.let { activity ->
+        activity.runOnUiThread {
+          activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+      }
       promise.resolve(null)
     } catch (e: Exception) {
       promise.reject("STOP_FAILED", e.message, e)
@@ -139,26 +157,14 @@ class PoseModule(reactContext: ReactApplicationContext) :
     detector?.process(image)
       ?.addOnSuccessListener { pose ->
         val now = System.currentTimeMillis()
-        val landmarks = pose.allPoseLandmarks
-        if (landmarks.isEmpty()) {
-          onNoPose(now)
-        } else {
-          lastPoseMs = now
-          poseLostEmitted = false
-          val angle = jointAngleForExercise(pose, exercise)
-          if (angle == null) {
-            // Body visible but the joints this exercise needs are cut off
-            // (e.g. feet out of frame for squats) — tell the user to adjust
-            // instead of silently counting nothing.
-            onJointsMissing(now)
-            return@addOnSuccessListener
-          }
-          jointsMissingEmitted = false
-          feedAngle(angle, now)
-        }
+        val (state, angle) = measure(pose)
+        updateFraming(state, now)
+        // Count only while the joints this exercise needs are in frame:
+        // guessed off-screen landmarks must never bank (or block) a rep.
+        if (state == FRAMING_IN && angle != null) feedAngle(angle, now)
       }
       ?.addOnFailureListener {
-        onNoPose(System.currentTimeMillis())
+        updateFraming(FRAMING_NONE, System.currentTimeMillis())
       }
       ?.addOnCompleteListener {
         imageProxy.close()
@@ -166,66 +172,85 @@ class PoseModule(reactContext: ReactApplicationContext) :
       ?: imageProxy.close()
   }
 
-  private fun onNoPose(now: Long) {
-    if (!poseLostEmitted && now - lastPoseMs > POSE_LOST_MS) {
-      poseLostEmitted = true
-      emit("onPoseLost", Arguments.createMap().apply {
-        putString("reason", "no_body")
-      })
+  /**
+   * Framing state and joint angle for this frame. ML Kit always returns all
+   * 33 landmarks once it finds a person, guessing positions for the ones it
+   * can't see — so visibility comes from inFrameLikelihood, not presence.
+   */
+  private fun measure(pose: Pose): Pair<Int, Double?> {
+    val landmarks = pose.allPoseLandmarks
+    if (landmarks.isEmpty()) return FRAMING_NONE to null
+
+    var best: List<PoseLandmark>? = null
+    var bestScore = -1f
+    for (left in listOf(true, false)) {
+      val joints = jointsFor(exercise, left)?.mapNotNull { pose.getPoseLandmark(it) } ?: continue
+      if (joints.size != 3) continue
+      val score = joints.minOf { it.inFrameLikelihood }
+      if (score > bestScore) {
+        best = joints
+        bestScore = score
+      }
     }
+    val joints = best
+    if (joints != null && bestScore >= MIN_IN_FRAME) {
+      val (a, b, c) = joints.map { doubleArrayOf(it.position.x.toDouble(), it.position.y.toDouble()) }
+      return FRAMING_IN to angleBetween(a, b, c)
+    }
+    val visible = landmarks.count { it.inFrameLikelihood >= MIN_IN_FRAME }
+    return (if (visible >= MIN_VISIBLE_FOR_PARTIAL) FRAMING_PARTIAL else FRAMING_NONE) to null
   }
 
-  private var jointsMissingEmitted = false
-  private var lastJointsMissingMs: Long = 0L
-
-  private fun onJointsMissing(now: Long) {
-    // Throttle: remind every few seconds, don't spam the cue banner.
-    if (!jointsMissingEmitted || now - lastJointsMissingMs > 4000L) {
-      jointsMissingEmitted = true
-      lastJointsMissingMs = now
-      emit("onPoseLost", Arguments.createMap().apply {
-        putString("reason", "partial_body")
-      })
+  /** The three joints whose angle drives the rep count, per exercise and side. */
+  private fun jointsFor(exercise: String, left: Boolean): List<Int>? = when (exercise) {
+    // Knee angle: hip–knee–ankle.
+    "squats" -> if (left) {
+      listOf(PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE, PoseLandmark.LEFT_ANKLE)
+    } else {
+      listOf(PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE, PoseLandmark.RIGHT_ANKLE)
     }
+    // Elbow angle: shoulder–elbow–wrist.
+    "pushups" -> if (left) {
+      listOf(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_ELBOW, PoseLandmark.LEFT_WRIST)
+    } else {
+      listOf(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_ELBOW, PoseLandmark.RIGHT_WRIST)
+    }
+    // Shoulder abduction approx: hip–shoulder–wrist.
+    "jumping_jacks" -> if (left) {
+      listOf(PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_WRIST)
+    } else {
+      listOf(PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_WRIST)
+    }
+    // Hip angle: shoulder–hip–knee.
+    "situps" -> if (left) {
+      listOf(PoseLandmark.LEFT_SHOULDER, PoseLandmark.LEFT_HIP, PoseLandmark.LEFT_KNEE)
+    } else {
+      listOf(PoseLandmark.RIGHT_SHOULDER, PoseLandmark.RIGHT_HIP, PoseLandmark.RIGHT_KNEE)
+    }
+    else -> null
   }
 
-  /** One joint angle (degrees) per exercise, from ML Kit landmarks. */
-  private fun jointAngleForExercise(
-    pose: com.google.mlkit.vision.pose.Pose,
-    exercise: String
-  ): Double? {
-    val lm = pose.allPoseLandmarks.associateBy { it.landmarkType }
-    fun pt(type: Int) = lm[type]?.position?.let { doubleArrayOf(it.x.toDouble(), it.y.toDouble()) }
-    return when (exercise) {
-      "squats" -> {
-        // Knee angle: hip–knee–ankle (left side).
-        val hip = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_HIP)
-        val knee = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_KNEE)
-        val ankle = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_ANKLE)
-        if (hip != null && knee != null && ankle != null) angleBetween(hip, knee, ankle) else null
-      }
-      "pushups" -> {
-        // Elbow angle: shoulder–elbow–wrist (left side).
-        val shoulder = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_SHOULDER)
-        val elbow = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_ELBOW)
-        val wrist = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_WRIST)
-        if (shoulder != null && elbow != null && wrist != null) angleBetween(shoulder, elbow, wrist) else null
-      }
-      "jumping_jacks" -> {
-        // Shoulder abduction approx: angle at shoulder between hip–shoulder–wrist.
-        val hip = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_HIP)
-        val shoulder = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_SHOULDER)
-        val wrist = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_WRIST)
-        if (hip != null && shoulder != null && wrist != null) angleBetween(hip, shoulder, wrist) else null
-      }
-      "situps" -> {
-        // Hip angle: shoulder–hip–knee (left side).
-        val shoulder = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_SHOULDER)
-        val hip = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_HIP)
-        val knee = pt(com.google.mlkit.vision.pose.PoseLandmark.LEFT_KNEE)
-        if (shoulder != null && hip != null && knee != null) angleBetween(shoulder, hip, knee) else null
-      }
-      else -> null
+  /** Emit `onFraming` once a new state has held long enough to trust. */
+  private fun updateFraming(next: Int, now: Long) {
+    if (next == framing) {
+      pendingFraming = framing
+      return
+    }
+    if (next != pendingFraming) {
+      pendingFraming = next
+      pendingSinceMs = now
+      return
+    }
+    val hold = if (next == FRAMING_NONE) POSE_LOST_MS else FRAMING_HOLD_MS
+    if (now - pendingSinceMs >= hold) {
+      framing = next
+      emit("onFraming", Arguments.createMap().apply {
+        putString("state", when (next) {
+          FRAMING_IN -> "in_frame"
+          FRAMING_PARTIAL -> "partial"
+          else -> "none"
+        })
+      })
     }
   }
 
@@ -312,6 +337,13 @@ class PoseModule(reactContext: ReactApplicationContext) :
     private const val PHASE_DOWN = 2
     private const val PHASE_ASCENDING = 3
     private const val POSE_LOST_MS = 2500L
+    private const val FRAMING_HOLD_MS = 400L
+    private const val MIN_IN_FRAME = 0.5f
+    private const val MIN_VISIBLE_FOR_PARTIAL = 4
+
+    private const val FRAMING_NONE = 0
+    private const val FRAMING_PARTIAL = 1
+    private const val FRAMING_IN = 2
 
     /**
      * Preview surface from PoseCameraViewManager. Static because the view

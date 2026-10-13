@@ -2,14 +2,14 @@
  * PoseModule — on-device rep verification (CameraX + ML Kit Pose Detection).
  *
  * Kotlin: android/.../pose/PoseModule.kt. Frames NEVER cross the bridge:
- * only rep events do. Emits `onRepCounted` per verified rep and `onPoseLost`
- * when no body is visible (camera covered, too dark, user walked away).
+ * only rep events do. Emits `onRepCounted` per verified rep and `onFraming`
+ * when framing changes (in frame, partly in frame, nobody in frame).
  *
  * The counting rules mirror src/workout/repCounter.ts — the native side is
  * authoritative at runtime; the TS class exists for tests and the web
  * fallback preview.
  */
-import type { ExerciseType, PoseLostPayload, RepCountedPayload } from '../types';
+import type { ExerciseType, FramingPayload, RepCountedPayload } from '../types';
 import {
   getModuleEventEmitter,
   getNativeModule,
@@ -50,15 +50,14 @@ export function addRepCountedListener(
 }
 
 /**
- * Subscribe to `onPoseLost` — drive the "get back in frame" UI and the
- * form-cue banner. The alarm keeps ringing; silence is never the answer
- * to a lost pose.
+ * Subscribe to `onFraming` — drives the framing border, status pill and
+ * framing cues. Reps pause while not in frame; the alarm keeps ringing.
  */
-export function addPoseLostListener(
-  listener: (payload: PoseLostPayload) => void,
+export function addFramingListener(
+  listener: (payload: FramingPayload) => void,
 ): () => void {
   const emitter = getModuleEventEmitter(MODULE_NAME);
-  const sub = emitter.addListener('onPoseLost', listener);
+  const sub = emitter.addListener('onFraming', listener);
   return () => sub.remove();
 }
 

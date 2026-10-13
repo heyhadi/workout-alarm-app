@@ -50,7 +50,7 @@ export interface AppSettings {
 
 /** Bridge events emitted natively → JS (see src/native/*). */
 export type BridgeEventName =
-  'onAlarmFired' | 'onRepCounted' | 'onPoseLost' | 'onAlarmReleased';
+  'onAlarmFired' | 'onRepCounted' | 'onFraming' | 'onAlarmReleased';
 
 export interface AlarmFiredPayload {
   alarmId: string;
@@ -65,8 +65,15 @@ export interface RepCountedPayload {
   exercise: ExerciseType;
 }
 
-export interface PoseLostPayload {
-  reason: 'no_body' | 'partial_body' | 'camera_error' | 'low_light';
+/**
+ * How well the camera sees the joints the exercise needs:
+ * in_frame = counting, partial = body visible but those joints cut off,
+ * none = nobody in frame.
+ */
+export type FramingState = 'in_frame' | 'partial' | 'none';
+
+export interface FramingPayload {
+  state: FramingState;
 }
 
 export interface AlarmReleasedPayload {

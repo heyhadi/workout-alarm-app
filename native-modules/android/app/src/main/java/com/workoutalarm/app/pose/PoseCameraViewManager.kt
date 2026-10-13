@@ -1,5 +1,6 @@
 package com.workoutalarm.app.pose
 
+import android.content.Context
 import android.widget.FrameLayout
 import androidx.camera.view.PreviewView
 import com.facebook.react.uimanager.SimpleViewManager
@@ -19,9 +20,12 @@ class PoseCameraViewManager : SimpleViewManager<FrameLayout>() {
   override fun getName() = REACT_CLASS
 
   override fun createViewInstance(reactContext: ThemedReactContext): FrameLayout {
-    val layout = FrameLayout(reactContext)
+    val layout = PreviewContainer(reactContext)
     val previewView = PreviewView(reactContext).apply {
-      // Fill the parent; CameraX handles the transform.
+      // TextureView-backed: composes correctly under React Native's
+      // overlays (border, pills, bottom strip) instead of punching through.
+      implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+      scaleType = PreviewView.ScaleType.FILL_CENTER
       layoutParams = FrameLayout.LayoutParams(
         FrameLayout.LayoutParams.MATCH_PARENT,
         FrameLayout.LayoutParams.MATCH_PARENT
@@ -35,6 +39,41 @@ class PoseCameraViewManager : SimpleViewManager<FrameLayout>() {
   override fun onDropViewInstance(view: FrameLayout) {
     super.onDropViewInstance(view)
     PoseModule.detachPreviewView()
+  }
+
+  /**
+   * React Native sizes this view but never measures native children added
+   * by hand. Without this, PreviewView stays 0×0, never offers CameraX a
+   * surface, and the whole session — preview AND pose analysis — stalls
+   * ("Failed to get Surfaces" in logcat, black preview, no reps).
+   */
+  private class PreviewContainer(context: Context) : FrameLayout(context) {
+    private val measureAndLayout = Runnable {
+      measure(
+        MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+        MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+      )
+      layout(left, top, right, bottom)
+    }
+
+    override fun requestLayout() {
+      super.requestLayout()
+      post(measureAndLayout)
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+      val w = r - l
+      val h = b - t
+      for (i in 0 until childCount) {
+        getChildAt(i).apply {
+          measure(
+            MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY)
+          )
+          layout(0, 0, w, h)
+        }
+      }
+    }
   }
 
   companion object {
