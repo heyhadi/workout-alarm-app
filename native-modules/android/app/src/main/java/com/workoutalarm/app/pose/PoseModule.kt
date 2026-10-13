@@ -69,6 +69,11 @@ class PoseModule(reactContext: ReactApplicationContext) :
   private var phase: Int = PHASE_UP
   private var cycleStartMs: Long = 0L
 
+  // Squats: hip-to-ankle height when standing, in image pixels. Tracks the
+  // tallest recent stance and decays slowly, so stepping closer or further
+  // from the phone re-calibrates within a few seconds.
+  private var standingHipHeight = 0.0
+
   // Framing: last emitted state, plus a candidate that must hold for a
   // moment before it is emitted (no flicker at the edge of the frame).
   private var framing: Int = FRAMING_NONE
@@ -88,6 +93,7 @@ class PoseModule(reactContext: ReactApplicationContext) :
       resetCycle()
       framing = FRAMING_NONE
       pendingFraming = FRAMING_NONE
+      standingHipHeight = 0.0
 
       // ML Kit 18.x: base SDK uses PoseDetectorOptions (the old
       // AccuratePoseDetectorOptions moved to the separate
@@ -172,7 +178,7 @@ class PoseModule(reactContext: ReactApplicationContext) :
         updateFraming(state, now)
         // Count only while the joints this exercise needs are in frame:
         // guessed off-screen landmarks must never bank (or block) a rep.
-        if (state == FRAMING_IN && angle != null) feedAngle(angle, now)
+        if (state == FRAMING_IN && angle != null && !angle.isNaN()) feedAngle(angle, now)
       }
       ?.addOnFailureListener {
         updateFraming(FRAMING_NONE, System.currentTimeMillis())
@@ -206,10 +212,25 @@ class PoseModule(reactContext: ReactApplicationContext) :
     val joints = best
     if (joints != null && bestScore >= MIN_IN_FRAME) {
       val (a, b, c) = joints.map { doubleArrayOf(it.position.x.toDouble(), it.position.y.toDouble()) }
-      return FRAMING_IN to angleBetween(a, b, c)
+      val value = if (exercise == "squats") squatDepth(hip = a, ankle = c) else angleBetween(a, b, c)
+      return FRAMING_IN to value
     }
     val visible = landmarks.count { it.inFrameLikelihood >= MIN_IN_FRAME }
     return (if (visible >= MIN_VISIBLE_FOR_PARTIAL) FRAMING_PARTIAL else FRAMING_NONE) to null
+  }
+
+  /**
+   * Squat depth on the knee-angle scale (≈180 standing, <100 at depth), from
+   * how far the hips have dropped toward the ankles relative to standing.
+   * Unlike the 2D knee angle this works facing the camera: knees bending
+   * toward the lens barely change the angle, but the hips still drop.
+   * Thighs parallel ≈ hips at knee height ≈ half the standing height → ~90.
+   */
+  private fun squatDepth(hip: DoubleArray, ankle: DoubleArray): Double {
+    val height = ankle[1] - hip[1] // image y grows downward
+    if (height <= 0) return Double.NaN
+    standingHipHeight = maxOf(height, standingHipHeight * STANDING_DECAY)
+    return 180.0 * (height / standingHipHeight)
   }
 
   /** The three joints whose angle drives the rep count, per exercise and side. */
@@ -340,6 +361,8 @@ class PoseModule(reactContext: ReactApplicationContext) :
     private const val FRAMING_HOLD_MS = 400L
     private const val MIN_IN_FRAME = 0.5f
     private const val MIN_VISIBLE_FOR_PARTIAL = 4
+    // Per frame (~15–30 fps): a stale standing height fades over ~20 s.
+    private const val STANDING_DECAY = 0.998
 
     private const val FRAMING_NONE = 0
     private const val FRAMING_PARTIAL = 1

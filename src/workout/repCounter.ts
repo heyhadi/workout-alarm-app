@@ -53,8 +53,10 @@ export const EXERCISE_COUNTER_CONFIGS: Record<
 > = {
   squats: {
     exercise: 'squats',
-    downThresholdDeg: 100, // hips below knee line ≈ knee angle < 100°
-    upThresholdDeg: 160, // standing ≈ knee angle > 160°
+    // Native measures squats as hip drop on this same scale (180 = standing
+    // height, ~90 = hips at knee level), so it counts facing the camera too.
+    downThresholdDeg: 100, // hips below knee line
+    upThresholdDeg: 160, // standing
     minRepMs: 600,
     maxRepMs: 6000,
   },
@@ -75,7 +77,9 @@ export const EXERCISE_COUNTER_CONFIGS: Record<
   situps: {
     exercise: 'situps',
     downThresholdDeg: 70, // torso curled ≈ hip angle < 70°
-    upThresholdDeg: 150, // lying back ≈ hip angle > 150°
+    // Lying back with knees bent puts the hip angle near 130–140°, so a
+    // 150° "top" was never reached and sit-ups never counted.
+    upThresholdDeg: 125,
     minRepMs: 700,
     maxRepMs: 8000,
   },
