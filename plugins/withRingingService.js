@@ -72,6 +72,8 @@ const withRingingService = (config) => {
     // reuses MainActivity via onNewIntent — without setIntent(), the
     // activity keeps the stale launcher intent and getRingingIntent()
     // never sees ACTION_RINGING (alarm rings with no workout screen).
+    // We also emit a JS event: when the app is already foregrounded,
+    // AppState never transitions to 'active', so JS would never re-check.
     const newIntentAnchor = 'override fun onCreate(';
     let updated = config.modResults.contents;
     if (!updated.includes('override fun onNewIntent(')) {
@@ -86,6 +88,13 @@ const withRingingService = (config) => {
           '") {\n' +
           '      setShowWhenLocked(true)\n' +
           '      setTurnScreenOn(true)\n' +
+          '      // Workout Alarm: app was already alive — push the event to JS\n' +
+          '      // so the router can jump to /ringing without an AppState change.\n' +
+          '      try {\n' +
+          '        reactInstanceManager.currentReactContext\n' +
+          '          ?.getJSModule(com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)\n' +
+          '          ?.emit("onRingingIntent", null)\n' +
+          '      } catch (_: Exception) { }\n' +
           '    }\n' +
           '  }\n\n  ' +
           newIntentAnchor,
