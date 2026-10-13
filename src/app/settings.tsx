@@ -8,10 +8,12 @@ import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import {
   getSettings,
+  setEmergencyExit,
   setLockInMinutes,
   type LanguageSetting,
 } from '../storage/settings';
 import { STEPS_PER_REP } from '../native/steps';
+import type { EmergencyExitMode } from '../types';
 
 const LOCK_IN_OPTIONS = [15, 30, 45, 60];
 
@@ -84,7 +86,7 @@ function Segments<T extends string | number>({
 /**
  * Screen 6 — Settings.
  * Language, alarm readiness (links to the checklist), step backup,
- * lock-in default. Every option here is live — no placeholders.
+ * emergency exit (off by default), lock-in default. Every option here is live — no placeholders.
  */
 export default function SettingsScreen() {
   const t = getSemanticTokens('day');
@@ -94,6 +96,9 @@ export default function SettingsScreen() {
   const { items, pending } = useAlarmReadiness();
   // Synchronous MMKV reads belong in lazy initializers, not effects.
   const [lockIn, setLockIn] = useState(() => getSettings().lockInMinutes);
+  const [emergencyExit, setEmergencyExitState] = useState<EmergencyExitMode>(
+    () => getSettings().emergencyExit,
+  );
 
   const s = strings.settings;
   const hasReadiness = items !== null && items.length > 0;
@@ -161,6 +166,22 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </Group>
+
+        <SectionTitle>{strings.emergency.setting}</SectionTitle>
+        <Segments<EmergencyExitMode>
+          selected={emergencyExit}
+          onSelect={(mode) => {
+            setEmergencyExitState(mode);
+            setEmergencyExit(mode);
+          }}
+          options={(['none', 'slow'] as EmergencyExitMode[]).map((value) => ({
+            value,
+            label: strings.emergency.options[value],
+          }))}
+        />
+        <Text style={[typeScale.bodySmall, styles.hint, { color: t.textSecondary }]}>
+          {strings.emergency.settingBody}
+        </Text>
 
         <SectionTitle>{s.lockIn}</SectionTitle>
         <Segments<number>

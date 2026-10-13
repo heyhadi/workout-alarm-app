@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { WorkoutView } from '../components/WorkoutView';
+import { EmergencyExit } from '../components/EmergencyExit';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStrings } from '../i18n';
 import { useWorkoutCounter } from '../hooks/useWorkoutCounter';
 import { getSemanticTokens } from '../../theme/helpers';
@@ -20,7 +22,7 @@ import {
   isLockdownModuleAvailable,
 } from '../native/lockdown';
 import { getAlarm, recordSession, setAlarmEnabled } from '../storage/db';
-import { incrementTotalWorkouts } from '../storage/settings';
+import { getSettings, incrementTotalWorkouts } from '../storage/settings';
 import type { Alarm, ExerciseType } from '../types';
 
 /**
@@ -133,12 +135,15 @@ function RingingWorkout({
 }) {
   const router = useRouter();
   const strings = useStrings();
+  const insets = useSafeAreaInsets();
   const releasedRef = useRef(false);
+  // Read once: the valve can't be switched on mid-ring.
+  const [valveEnabled] = useState(() => getSettings().emergencyExit === 'slow');
 
   // Release exactly once: stop sound, log the session, arm what's next,
-  // go to Done.
+  // go to Done. `skipped` = released through the emergency exit.
   const release = useCallback(
-    async (done: number) => {
+    async (done: number, skipped = false) => {
       if (releasedRef.current) return;
       releasedRef.current = true;
       const finishedAt = Date.now();
@@ -165,8 +170,9 @@ function RingingWorkout({
         startedAt,
         finishedAt,
         durationMs,
+        skipped,
       }).catch(() => undefined);
-      incrementTotalWorkouts();
+      if (!skipped) incrementTotalWorkouts();
       // A repeating alarm arms its next occurrence; a one-shot switches off
       // (native already forgot it in releaseAlarm).
       if (saved) {
@@ -182,6 +188,7 @@ function RingingWorkout({
           alarmId: alarm.id,
           repsDone: String(done),
           durationMs: String(durationMs),
+          skipped: skipped ? '1' : '0',
         },
       });
     },
@@ -201,6 +208,15 @@ function RingingWorkout({
         counter={counter}
         exercise={alarm.exercise}
         label={`${alarm.time} · ${strings.exercise[alarm.exercise]}`}
+      />
+      <EmergencyExit
+        enabled={valveEnabled}
+        startedAt={startedAt}
+        onExit={() => {
+          void release(counter.count, true);
+        }}
+        // Just above the rep strip (ring + padding + safe area).
+        linkBottom={insets.bottom + 200}
       />
     </Screen>
   );

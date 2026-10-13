@@ -18,11 +18,13 @@ export default function DoneScreen() {
   const router = useRouter();
   const t = getSemanticTokens('day');
   const strings = useStrings();
-  const { alarmId, repsDone, durationMs } = useLocalSearchParams<{
+  const { alarmId, repsDone, durationMs, skipped } = useLocalSearchParams<{
     alarmId: string;
     repsDone: string;
     durationMs: string;
+    skipped?: string;
   }>();
+  const wasSkipped = skipped === '1';
   const [streak, setStreak] = useState(0);
   // Synchronous store reads belong in lazy initializers, not effects.
   const [total] = useState(() => getTotalWorkouts());
@@ -59,10 +61,10 @@ export default function DoneScreen() {
     <Screen>
       <View style={styles.hero}>
         <Text style={[typeScale.display, { color: t.textPrimary }]}>
-          {strings.done.released}
+          {wasSkipped ? strings.done.skippedTitle : strings.done.released}
         </Text>
         <Text style={[typeScale.body, { color: t.textSecondary, marginTop: space.sm }]}>
-          {strings.done.body}
+          {wasSkipped ? strings.done.skippedBody : strings.done.body}
         </Text>
       </View>
 
@@ -88,7 +90,16 @@ export default function DoneScreen() {
         />
       </View>
 
-      <View style={[styles.accent, { backgroundColor: primitives.success[500] }]} />
+      <View
+        style={[
+          styles.accent,
+          {
+            backgroundColor: wasSkipped
+              ? primitives.warning[500]
+              : primitives.success[500],
+          },
+        ]}
+      />
     </Screen>
   );
 }

@@ -136,12 +136,29 @@ export const en = {
   ringing: {
     wakingUp: 'Waking up…',
   },
+  emergency: {
+    setting: 'Emergency exit',
+    options: { none: 'Off', slow: 'Slow exit' },
+    settingBody:
+      'For mornings a workout truly can’t happen. After 10 minutes of ringing: hold for 60 seconds, then type a sentence. That morning doesn’t count toward your streak.',
+    link: 'Emergency exit',
+    title: 'Emergency exit',
+    body: 'Hold the button for 60 seconds without letting go. Then type the sentence to stop the alarm. Today won’t count toward your streak.',
+    hold: 'Hold to continue',
+    holding: (secondsLeft: number) => `Keep holding… ${secondsLeft}s`,
+    typePrompt: 'Type this sentence exactly:',
+    phrase: 'I am choosing to skip my workout today.',
+    exit: 'Stop the alarm',
+    cancel: 'Back to the workout',
+  },
   practice: {
     label: 'Practice · no alarm',
     again: 'Again',
     done: (n: number) => `Done — ${n} counted`,
   },
   done: {
+    skippedTitle: 'Skipped.',
+    skippedBody: 'Emergency exit used. Today doesn’t count toward your streak.',
     released: 'Released.',
     body: 'No snooze survived. The phone is yours again.',
     reps: 'Reps',

@@ -47,6 +47,15 @@ export async function initDatabase(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_sessions_finished ON sessions(finished_at DESC);
   `);
+  // v2: emergency-exit sessions are kept but flagged (not workouts).
+  const columns = await database.getAllAsync<{ name: string }>(
+    'PRAGMA table_info(sessions)',
+  );
+  if (!columns.some((c) => c.name === 'skipped')) {
+    await database.execAsync(
+      'ALTER TABLE sessions ADD COLUMN skipped INTEGER NOT NULL DEFAULT 0',
+    );
+  }
 }
 
 function rowToAlarm(row: Record<string, unknown>): Alarm {
@@ -123,8 +132,8 @@ export async function setAlarmEnabled(id: string, enabled: boolean): Promise<voi
 export async function recordSession(session: WorkoutSession): Promise<void> {
   await getDatabase().runAsync(
     `INSERT INTO sessions (id, alarm_id, exercise, reps_target, reps_done,
-       started_at, finished_at, duration_ms)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       started_at, finished_at, duration_ms, skipped)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       session.id,
       session.alarmId,
@@ -134,6 +143,7 @@ export async function recordSession(session: WorkoutSession): Promise<void> {
       session.startedAt,
       session.finishedAt,
       session.durationMs,
+      session.skipped ? 1 : 0,
     ],
   );
 }
@@ -153,15 +163,17 @@ export async function listRecentSessions(limit = 30): Promise<WorkoutSession[]> 
     startedAt: row.started_at as number,
     finishedAt: row.finished_at as number,
     durationMs: row.duration_ms as number,
+    skipped: (row.skipped as number) === 1,
   }));
 }
 
 /**
- * Consecutive days (local time) with at least one completed session,
+ * Consecutive days (local time) with at least one completed session
+ * (emergency exits don't count),
  * counting back from today. Used by the alarm-list streak badge.
  */
 export async function currentStreakDays(): Promise<number> {
-  const sessions = await listRecentSessions(365);
+  const sessions = (await listRecentSessions(365)).filter((s) => !s.skipped);
   const days = new Set(
     sessions.map((s) => {
       const d = new Date(s.finishedAt);

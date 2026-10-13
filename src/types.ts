@@ -39,6 +39,8 @@ export interface WorkoutSession {
   finishedAt: number;
   /** Derived: finishedAt - startedAt */
   durationMs: number;
+  /** Released through the emergency exit: recorded, but not a workout. */
+  skipped: boolean;
 }
 
 export interface AppSettings {

@@ -129,12 +129,29 @@ export const id: Strings = {
   ringing: {
     wakingUp: 'Membangunkan…',
   },
+  emergency: {
+    setting: 'Jalan keluar darurat',
+    options: { none: 'Mati', slow: 'Keluar lambat' },
+    settingBody:
+      'Untuk pagi saat latihan benar-benar tidak mungkin. Setelah alarm berbunyi 10 menit: tahan 60 detik, lalu ketik sebuah kalimat. Pagi itu tidak dihitung dalam streak.',
+    link: 'Jalan keluar darurat',
+    title: 'Jalan keluar darurat',
+    body: 'Tahan tombol selama 60 detik tanpa melepas. Lalu ketik kalimatnya untuk mematikan alarm. Hari ini tidak dihitung dalam streak.',
+    hold: 'Tahan untuk lanjut',
+    holding: (secondsLeft) => `Terus tahan… ${secondsLeft} dtk`,
+    typePrompt: 'Ketik kalimat ini persis:',
+    phrase: 'Saya memilih untuk melewatkan latihan hari ini.',
+    exit: 'Matikan alarm',
+    cancel: 'Kembali ke latihan',
+  },
   practice: {
     label: 'Latihan · tanpa alarm',
     again: 'Lagi',
     done: (n) => `Selesai — ${n} terhitung`,
   },
   done: {
+    skippedTitle: 'Dilewati.',
+    skippedBody: 'Jalan keluar darurat dipakai. Hari ini tidak dihitung dalam streak.',
     released: 'Bebas.',
     body: 'Tak ada snooze yang lolos. Ponselmu milikmu lagi.',
     reps: 'Repetisi',
