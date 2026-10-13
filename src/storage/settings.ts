@@ -21,6 +21,7 @@ const Keys = {
   onboardingDone: 'onboardingDone',
   totalWorkouts: 'totalWorkouts',
   autostartConfirmed: 'autostartConfirmed',
+  language: 'language',
 } as const;
 
 const DEFAULTS: AppSettings = {
@@ -88,4 +89,16 @@ export function isAutostartConfirmed(): boolean {
 
 export function confirmAutostart(): void {
   storage.set(Keys.autostartConfirmed, true);
+}
+
+/** UI language: follow the phone ("system"), or a fixed choice. */
+export type LanguageSetting = 'system' | 'en' | 'id';
+
+export function getLanguageSetting(): LanguageSetting {
+  const value = storage.getString(Keys.language);
+  return value === 'en' || value === 'id' ? value : 'system';
+}
+
+export function setLanguageSetting(setting: LanguageSetting): void {
+  storage.set(Keys.language, setting);
 }

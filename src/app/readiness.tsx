@@ -7,6 +7,7 @@ import { allow, markAutostartDone } from '../native/readiness';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { ChecklistItem, ItemState } from '../readiness/checklist';
+import { useStrings } from '../i18n';
 
 const STATE_UI: Record<ItemState, { color: string; mark: string }> = {
   ok: { color: primitives.success[500], mark: '✓' },
@@ -23,6 +24,7 @@ const STATE_UI: Record<ItemState, { color: string; mark: string }> = {
 export default function ReadinessScreen() {
   const router = useRouter();
   const t = getSemanticTokens('day');
+  const strings = useStrings();
   const { items, pending, refresh } = useAlarmReadiness();
 
   const done = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -46,14 +48,14 @@ export default function ReadinessScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[typeScale.display, { color: t.textPrimary, fontSize: 30 }]}>
-          Get alarm-ready
+          {strings.readiness.title}
         </Text>
         <Text style={[typeScale.body, { color: t.textSecondary, marginTop: space.xs }]}>
           {items === null
-            ? 'Checking…'
+            ? strings.readiness.checking
             : pending === 0
-              ? 'All set — your alarm can ring, take over the screen and be finished.'
-              : `${total - pending} of ${total} done · rechecks when you come back`}
+              ? strings.readiness.allSet
+              : strings.readiness.progress(total - pending, total)}
         </Text>
 
         {items?.map((item) => {
@@ -71,21 +73,30 @@ export default function ReadinessScreen() {
               </View>
               <View style={styles.main}>
                 <Text style={[typeScale.label, { color: t.textPrimary }]}>
-                  {item.title}
+                  {strings.readiness.items[item.key].title}
                 </Text>
                 {item.state !== 'ok' && (
                   <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-                    {item.why}
+                    {strings.readiness.items[item.key].why}
                   </Text>
                 )}
               </View>
               {item.state === 'missing' && (
-                <RowButton label="Allow" onPress={() => handleAllow(item)} />
+                <RowButton
+                  label={strings.readiness.allow}
+                  onPress={() => handleAllow(item)}
+                />
               )}
               {item.state === 'unverifiable' && (
                 <View style={styles.pair}>
-                  <RowButton label="Open" onPress={() => handleAllow(item)} />
-                  <RowButton label="Done" onPress={handleAutostartDone} />
+                  <RowButton
+                    label={strings.readiness.open}
+                    onPress={() => handleAllow(item)}
+                  />
+                  <RowButton
+                    label={strings.readiness.confirm}
+                    onPress={handleAutostartDone}
+                  />
                 </View>
               )}
             </View>
@@ -94,7 +105,7 @@ export default function ReadinessScreen() {
 
         <View style={styles.cta}>
           <PrimaryButton
-            label={pending === 0 ? 'Done' : 'Finish later'}
+            label={pending === 0 ? strings.common.done : strings.readiness.finishLater}
             onPress={done}
           />
         </View>

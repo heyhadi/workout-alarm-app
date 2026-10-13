@@ -2,14 +2,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { getSemanticTokens } from '../../theme/helpers';
 import { components, primitives, space, type as typeScale } from '../../theme/tokens';
 import type { ExerciseType } from '../types';
-
-export const EXERCISE_LABELS: Record<ExerciseType, string> = {
-  squats: 'Squats',
-  pushups: 'Push-ups',
-  jumping_jacks: 'Jumping jacks',
-  situps: 'Sit-ups',
-  steps: 'Steps',
-};
+import { useStrings } from '../i18n';
 
 interface ExerciseChipProps {
   exercise: ExerciseType;
@@ -20,6 +13,7 @@ interface ExerciseChipProps {
 /** Pill chip for the exercise picker. Selected = energy-50 fill + energy-600 text. */
 export function ExerciseChip({ exercise, selected, onSelect }: ExerciseChipProps) {
   const t = getSemanticTokens('day');
+  const strings = useStrings();
   return (
     <Pressable
       accessibilityRole="button"
@@ -44,7 +38,7 @@ export function ExerciseChip({ exercise, selected, onSelect }: ExerciseChipProps
           },
         ]}
       >
-        {EXERCISE_LABELS[exercise]}
+        {strings.exercise[exercise]}
       </Text>
     </Pressable>
   );

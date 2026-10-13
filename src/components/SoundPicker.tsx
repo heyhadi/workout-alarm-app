@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getSemanticTokens } from '../../theme/helpers';
 import { radius, space, type as typeScale } from '../../theme/tokens';
 import { soundUriOf } from '../native/alarms';
+import { useStrings } from '../i18n';
 import {
   getSoundTitle,
   isRingingModuleAvailable,
@@ -21,12 +22,15 @@ interface SoundPickerProps {
  */
 export function SoundPicker({ value, onChange }: SoundPickerProps) {
   const t = getSemanticTokens('day');
+  const strings = useStrings();
   const available = isRingingModuleAvailable();
   const uri = soundUriOf(value);
-  const [title, setTitle] = useState('Phone default');
+  // Named sounds come from Android; the default is ours to translate.
+  const [pickedTitle, setTitle] = useState<string | null>(null);
+  const title = uri && pickedTitle ? pickedTitle : strings.sound.phoneDefault;
 
   useEffect(() => {
-    if (!available) return;
+    if (!available || !uri) return;
     let cancelled = false;
     getSoundTitle(uri)
       .then((name) => {
@@ -41,14 +45,14 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
   const handlePress = async () => {
     const picked = await pickAlarmSound(uri).catch(() => null);
     if (!picked) return; // backed out: keep the current sound
-    setTitle(picked.title);
+    setTitle(picked.uri ? picked.title : null);
     onChange(picked.uri ?? '');
   };
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Alarm sound: ${title}`}
+      accessibilityLabel={strings.sound.label(title)}
       disabled={!available}
       onPress={handlePress}
       style={[styles.row, { backgroundColor: t.bgSurface, borderColor: t.border }]}
@@ -59,12 +63,14 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
         </Text>
         {!available && (
           <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-            Choosing a sound needs a dev build.
+            {strings.sound.needsDevBuild}
           </Text>
         )}
       </View>
       {available && (
-        <Text style={[typeScale.label, { color: t.actionPrimary }]}>Change</Text>
+        <Text style={[typeScale.label, { color: t.actionPrimary }]}>
+          {strings.sound.change}
+        </Text>
       )}
     </Pressable>
   );

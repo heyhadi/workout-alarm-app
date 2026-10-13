@@ -11,6 +11,7 @@ import {
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { I18nProvider } from '../i18n';
 import { initDatabase, listAlarms } from '../storage/db';
 import { syncAlarmSchedules } from '../native/alarms';
 import {
@@ -110,16 +111,18 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <ErrorBoundary>
-        <StatusBar style="auto" />
-        <Stack
-          screenOptions={{
-            // Screens set their own headers; the ringing screen hides it.
-            headerShown: false,
-            animation: 'slide_from_right',
-          }}
-        />
-      </ErrorBoundary>
+      <I18nProvider>
+        <ErrorBoundary>
+          <StatusBar style="auto" />
+          <Stack
+            screenOptions={{
+              // Screens set their own headers; the ringing screen hides it.
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+        </ErrorBoundary>
+      </I18nProvider>
     </GestureHandlerRootView>
   );
 }

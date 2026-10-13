@@ -7,13 +7,8 @@ import { getSemanticTokens } from '../../theme/helpers';
 import { elevation, primitives, space, type as typeScale } from '../../theme/tokens';
 import { currentStreakDays, getAlarm } from '../storage/db';
 import { getTotalWorkouts } from '../storage/settings';
-import { EXERCISE_LABELS } from '../components/ExerciseChip';
-
-function formatDuration(ms: number): string {
-  const s = Math.round(ms / 1000);
-  const m = Math.floor(s / 60);
-  return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
-}
+import type { ExerciseType } from '../types';
+import { useStrings } from '../i18n';
 
 /**
  * Screen 5 — Done. The release moment: time taken, reps, streak,
@@ -22,6 +17,7 @@ function formatDuration(ms: number): string {
 export default function DoneScreen() {
   const router = useRouter();
   const t = getSemanticTokens('day');
+  const strings = useStrings();
   const { alarmId, repsDone, durationMs } = useLocalSearchParams<{
     alarmId: string;
     repsDone: string;
@@ -30,7 +26,7 @@ export default function DoneScreen() {
   const [streak, setStreak] = useState(0);
   // Synchronous store reads belong in lazy initializers, not effects.
   const [total] = useState(() => getTotalWorkouts());
-  const [exerciseLabel, setExerciseLabel] = useState('');
+  const [exercise, setExercise] = useState<ExerciseType | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +37,7 @@ export default function DoneScreen() {
       .catch(() => undefined);
     getAlarm(alarmId)
       .then((a) => {
-        if (!cancelled && a) setExerciseLabel(EXERCISE_LABELS[a.exercise]);
+        if (!cancelled && a) setExercise(a.exercise);
       })
       .catch(() => undefined);
     return () => {
@@ -50,18 +46,23 @@ export default function DoneScreen() {
   }, [alarmId]);
 
   const stats: [string, string][] = [
-    ['Reps', `${repsDone}${exerciseLabel ? ` ${exerciseLabel}` : ''}`],
-    ['Time', formatDuration(Number(durationMs) || 0)],
-    ['Streak', `${streak} morning${streak === 1 ? '' : 's'}`],
-    ['Total workouts', String(total)],
+    [
+      strings.done.reps,
+      `${repsDone}${exercise ? ` ${strings.exercise[exercise]}` : ''}`,
+    ],
+    [strings.done.time, strings.elapsed(Number(durationMs) || 0)],
+    [strings.done.streak, strings.streak(streak)],
+    [strings.done.total, String(total)],
   ];
 
   return (
     <Screen>
       <View style={styles.hero}>
-        <Text style={[typeScale.display, { color: t.textPrimary }]}>Released.</Text>
+        <Text style={[typeScale.display, { color: t.textPrimary }]}>
+          {strings.done.released}
+        </Text>
         <Text style={[typeScale.body, { color: t.textSecondary, marginTop: space.sm }]}>
-          No snooze survived. The phone is yours again.
+          {strings.done.body}
         </Text>
       </View>
 
@@ -76,12 +77,15 @@ export default function DoneScreen() {
 
       <View style={styles.shareNote}>
         <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-          Shareable streak card ships in a later milestone.
+          {strings.done.shareNote}
         </Text>
       </View>
 
       <View style={styles.cta}>
-        <PrimaryButton label="Done" onPress={() => router.replace('/')} />
+        <PrimaryButton
+          label={strings.common.done}
+          onPress={() => router.replace('/')}
+        />
       </View>
 
       <View style={[styles.accent, { backgroundColor: primitives.success[500] }]} />

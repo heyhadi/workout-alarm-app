@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { getStrings } from '../i18n';
 import { getSemanticTokens } from '../../theme/helpers';
 import { space, type as typeScale } from '../../theme/tokens';
 
@@ -34,16 +35,17 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render(): ReactNode {
     if (this.state.error) {
       const t = getSemanticTokens('day');
+      // Class component: read the current language directly.
+      const strings = getStrings();
       return (
         <View style={[styles.fallback, { backgroundColor: t.bgScreen }]}>
           <Text style={[typeScale.heading, { color: t.textPrimary }]}>
-            Something went wrong
+            {strings.error.title}
           </Text>
           <Text
             style={[typeScale.body, { color: t.textSecondary, marginTop: space.sm }]}
           >
-            Your alarms are still scheduled natively and will ring as usual. Restart the
-            app to continue.
+            {strings.error.body}
           </Text>
         </View>
       );

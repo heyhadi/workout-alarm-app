@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { WorkoutView } from '../components/WorkoutView';
-import { EXERCISE_LABELS } from '../components/ExerciseChip';
+import { useStrings } from '../i18n';
 import { useWorkoutCounter } from '../hooks/useWorkoutCounter';
 import { getSemanticTokens } from '../../theme/helpers';
 import { type as typeScale } from '../../theme/tokens';
@@ -60,6 +60,7 @@ function alarmFromRinging(
 export default function RingingScreen() {
   const { alarmId } = useLocalSearchParams<{ alarmId: string }>();
   const t = getSemanticTokens('alarm');
+  const strings = useStrings();
   const [loaded, setLoaded] = useState<{ alarm: Alarm; saved: boolean } | null>(null);
   const [startedAt] = useState(() => Date.now());
 
@@ -107,7 +108,9 @@ export default function RingingScreen() {
     return (
       <Screen mode="alarm">
         <View style={styles.center}>
-          <Text style={[typeScale.body, { color: t.textSecondary }]}>Waking up…</Text>
+          <Text style={[typeScale.body, { color: t.textSecondary }]}>
+            {strings.ringing.wakingUp}
+          </Text>
         </View>
       </Screen>
     );
@@ -129,6 +132,7 @@ function RingingWorkout({
   startedAt: number;
 }) {
   const router = useRouter();
+  const strings = useStrings();
   const releasedRef = useRef(false);
 
   // Release exactly once: stop sound, log the session, arm what's next,
@@ -196,7 +200,7 @@ function RingingWorkout({
       <WorkoutView
         counter={counter}
         exercise={alarm.exercise}
-        label={`${alarm.time} · ${EXERCISE_LABELS[alarm.exercise]}`}
+        label={`${alarm.time} · ${strings.exercise[alarm.exercise]}`}
       />
     </Screen>
   );

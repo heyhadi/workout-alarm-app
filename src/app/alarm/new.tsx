@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Screen } from '../../components/Screen';
+import { useStrings } from '../../i18n';
 import { AlarmForm, type AlarmFormValue } from '../../components/AlarmForm';
 import { upsertAlarm } from '../../storage/db';
 import { applyAlarmSchedule } from '../../native/alarms';
@@ -20,6 +21,7 @@ const DEFAULTS: AlarmFormValue = {
 /** Create a new alarm, then schedule it natively when the bridge exists. */
 export default function NewAlarmScreen() {
   const router = useRouter();
+  const strings = useStrings();
 
   const handleSubmit = async (value: AlarmFormValue) => {
     const now = Date.now();
@@ -45,7 +47,11 @@ export default function NewAlarmScreen() {
 
   return (
     <Screen>
-      <AlarmForm initial={DEFAULTS} submitLabel="Save alarm" onSubmit={handleSubmit} />
+      <AlarmForm
+        initial={DEFAULTS}
+        submitLabel={strings.form.save}
+        onSubmit={handleSubmit}
+      />
     </Screen>
   );
 }

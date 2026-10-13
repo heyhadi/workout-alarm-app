@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
+import { useLanguageSetting, useStrings } from '../i18n';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import {
@@ -10,6 +11,7 @@ import {
   setEmergencyExit,
   setLockInMinutes,
   setStrictness,
+  type LanguageSetting,
 } from '../storage/settings';
 import { STEPS_PER_REP } from '../native/steps';
 import type { EmergencyExitMode, StrictnessLevel } from '../types';
@@ -25,11 +27,13 @@ function SectionTitle({ children }: { children: string }) {
 
 /**
  * Screen 6 — Settings & strictness.
- * Alarm readiness (links to the checklist), strictness level,
+ * Language, alarm readiness (links to the checklist), strictness level,
  * emergency-exit setup, step backup, lock-in default.
  */
 export default function SettingsScreen() {
   const t = getSemanticTokens('day');
+  const strings = useStrings();
+  const [language, setLanguage] = useLanguageSetting();
   const router = useRouter();
   const { items, pending } = useAlarmReadiness();
   // Synchronous MMKV reads belong in lazy initializers, not effects.
@@ -51,10 +55,38 @@ export default function SettingsScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[typeScale.display, { color: t.textPrimary, fontSize: 32 }]}>
-          Settings
+          {strings.settings.title}
         </Text>
 
-        <SectionTitle>Alarm readiness</SectionTitle>
+        <SectionTitle>{strings.settings.language}</SectionTitle>
+        <View style={styles.rowWrap}>
+          {(['system', 'en', 'id'] as LanguageSetting[]).map((option) => (
+            <Pressable
+              key={option}
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === option }}
+              onPress={() => setLanguage(option)}
+              style={[
+                styles.mini,
+                {
+                  backgroundColor: language === option ? t.actionPrimary : t.bgSurface,
+                  borderColor: t.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  typeScale.bodySmall,
+                  { color: language === option ? t.textOnAccent : t.textPrimary },
+                ]}
+              >
+                {strings.settings.languageOptions[option]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <SectionTitle>{strings.settings.readiness}</SectionTitle>
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push('/readiness')}
@@ -76,24 +108,19 @@ export default function SettingsScreen() {
           <View style={styles.rowMain}>
             <Text style={[typeScale.label, { color: t.textPrimary }]}>
               {items && items.length > 0 && pending === 0
-                ? 'Ready'
+                ? strings.settings.ready
                 : items && items.length > 0
-                  ? `${pending} to fix`
-                  : 'Requires a dev build'}
+                  ? strings.settings.toFix(pending)
+                  : strings.settings.devBuild}
             </Text>
             <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-              Permissions the alarm needs to ring, take over the screen and be finished.
+              {strings.settings.readinessBody}
             </Text>
           </View>
         </Pressable>
 
-        <SectionTitle>Strictness level</SectionTitle>
-        {(
-          [
-            ['standard', 'Lock-task + recovery. Play Store friendly.'],
-            ['maximum', 'Device-owner controls. Harder install and review.'],
-          ] as [StrictnessLevel, string][]
-        ).map(([level, detail]) => (
+        <SectionTitle>{strings.settings.strictness}</SectionTitle>
+        {(['standard', 'maximum'] as StrictnessLevel[]).map((level) => (
           <Pressable
             key={level}
             onPress={() => pick(strictness, setStrictnessState, setStrictness)(level)}
@@ -106,21 +133,16 @@ export default function SettingsScreen() {
             ]}
           >
             <Text style={[typeScale.label, { color: t.textPrimary }]}>
-              {level === 'standard' ? 'Standard' : 'Maximum'}
+              {strings.settings.strictnessOptions[level].title}
             </Text>
             <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-              {detail}
+              {strings.settings.strictnessOptions[level].detail}
             </Text>
           </Pressable>
         ))}
 
-        <SectionTitle>Emergency exit</SectionTitle>
-        {(
-          [
-            ['none', 'No valve at all. Absolute strictness.'],
-            ['slow', 'Deliberately painful exit, set up in advance, off by default.'],
-          ] as [EmergencyExitMode, string][]
-        ).map(([mode, detail]) => (
+        <SectionTitle>{strings.settings.emergency}</SectionTitle>
+        {(['none', 'slow'] as EmergencyExitMode[]).map((mode) => (
           <Pressable
             key={mode}
             onPress={() =>
@@ -135,20 +157,20 @@ export default function SettingsScreen() {
             ]}
           >
             <Text style={[typeScale.label, { color: t.textPrimary }]}>
-              {mode === 'none' ? 'None' : 'Slow safety valve'}
+              {strings.settings.emergencyOptions[mode].title}
             </Text>
             <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-              {detail}
+              {strings.settings.emergencyOptions[mode].detail}
             </Text>
           </Pressable>
         ))}
 
-        <SectionTitle>Backup if camera fails</SectionTitle>
+        <SectionTitle>{strings.form.backup}</SectionTitle>
         <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-          {`Walk it off: ${STEPS_PER_REP} steps per rep, counted by the step sensor. Used when the camera is blocked, denied or can’t see you for 2 minutes.`}
+          {strings.form.backupBody(STEPS_PER_REP)}
         </Text>
 
-        <SectionTitle>Default lock-in window</SectionTitle>
+        <SectionTitle>{strings.settings.lockIn}</SectionTitle>
         <View style={styles.rowWrap}>
           {[15, 30, 45, 60].map((mins) => (
             <Pressable
@@ -168,7 +190,7 @@ export default function SettingsScreen() {
                   { color: lockIn === mins ? t.textOnAccent : t.textPrimary },
                 ]}
               >
-                {`${mins}m`}
+                {strings.form.minutes(mins)}
               </Text>
             </Pressable>
           ))}

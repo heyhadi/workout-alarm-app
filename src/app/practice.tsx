@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { Screen } from '../components/Screen';
 import { WorkoutView } from '../components/WorkoutView';
-import { EXERCISE_LABELS } from '../components/ExerciseChip';
+import { useStrings } from '../i18n';
 import { useWorkoutCounter } from '../hooks/useWorkoutCounter';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { ExerciseType } from '../types';
@@ -47,6 +47,7 @@ function PracticeRound({
   onPick: (e: ExerciseType) => void;
   onAgain: () => void;
 }) {
+  const strings = useStrings();
   const [done, setDone] = useState(false);
   const counter = useWorkoutCounter({
     exercise,
@@ -75,7 +76,7 @@ function PracticeRound({
             ]}
           >
             <Text style={[typeScale.bodySmall, { color: primitives.white }]}>
-              {EXERCISE_LABELS[e]}
+              {strings.exercise[e]}
             </Text>
           </Pressable>
         );
@@ -87,7 +88,7 @@ function PracticeRound({
           style={[styles.chip, { backgroundColor: primitives.success[500] }]}
         >
           <Text style={[typeScale.bodySmall, { color: primitives.ink[950] }]}>
-            Again
+            {strings.practice.again}
           </Text>
         </Pressable>
       )}
@@ -98,9 +99,9 @@ function PracticeRound({
     <WorkoutView
       counter={counter}
       exercise={exercise}
-      label="Practice · no alarm"
+      label={strings.practice.label}
       header={header}
-      cueOverride={done ? `Done — ${counter.count} counted` : undefined}
+      cueOverride={done ? strings.practice.done(counter.count) : undefined}
     />
   );
 }

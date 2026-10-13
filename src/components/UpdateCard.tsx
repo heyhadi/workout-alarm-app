@@ -4,6 +4,7 @@ import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import { checkForUpdate, installUpdate } from '../native/updates';
 import type { AvailableUpdate } from '../updates/latestRelease';
+import { useStrings } from '../i18n';
 
 type InstallState = 'idle' | 'downloading' | 'needs-permission' | 'failed';
 
@@ -14,6 +15,7 @@ type InstallState = 'idle' | 'downloading' | 'needs-permission' | 'failed';
  */
 export function UpdateCard() {
   const t = getSemanticTokens('day');
+  const strings = useStrings();
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   const [state, setState] = useState<InstallState>('idle');
 
@@ -44,12 +46,12 @@ export function UpdateCard() {
 
   const detail =
     state === 'downloading'
-      ? 'Downloading…'
+      ? strings.update.downloading
       : state === 'needs-permission'
-        ? 'Allow installs from Workout Alarm in the settings that opened, then tap Install again.'
+        ? strings.update.needsPermission
         : state === 'failed'
-          ? 'Couldn’t install the update. Check your connection and try again.'
-          : `${update.title} is ready to install.`;
+          ? strings.update.failed
+          : strings.update.ready(update.title);
 
   return (
     <View
@@ -57,7 +59,7 @@ export function UpdateCard() {
     >
       <View style={styles.main}>
         <Text style={[typeScale.label, { color: t.textPrimary }]}>
-          Update available
+          {strings.update.available}
         </Text>
         <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>{detail}</Text>
       </View>
@@ -68,7 +70,7 @@ export function UpdateCard() {
         style={[styles.button, { borderColor: primitives.energy[600] }]}
       >
         <Text style={[typeScale.label, { color: primitives.energy[600] }]}>
-          Install
+          {strings.update.install}
         </Text>
       </Pressable>
     </View>

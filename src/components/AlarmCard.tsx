@@ -9,9 +9,7 @@ import {
   type as typeScale,
 } from '../../theme/tokens';
 import type { Alarm } from '../types';
-import { EXERCISE_LABELS } from './ExerciseChip';
-
-const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+import { useStrings } from '../i18n';
 
 interface AlarmCardProps {
   alarm: Alarm;
@@ -38,15 +36,18 @@ export function AlarmCard({
   onDelete,
 }: AlarmCardProps) {
   const t = getSemanticTokens('day');
+  const strings = useStrings();
 
   const renderRightActions = () => (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Delete alarm ${alarm.time}`}
+      accessibilityLabel={strings.card.deleteLabel(alarm.time)}
       onPress={onDelete}
       style={[styles.deleteAction, { backgroundColor: t.stateDanger }]}
     >
-      <Text style={[styles.deleteLabel, { color: t.textOnAccent }]}>Delete</Text>
+      <Text style={[styles.deleteLabel, { color: t.textOnAccent }]}>
+        {strings.card.delete}
+      </Text>
     </Pressable>
   );
 
@@ -68,10 +69,10 @@ export function AlarmCard({
         <Text
           style={[typeScale.bodySmall, { color: t.textSecondary, marginTop: space.xs }]}
         >
-          {`${EXERCISE_LABELS[alarm.exercise]} · ${alarm.repTarget} reps`}
+          {`${strings.exercise[alarm.exercise]} · ${strings.card.reps(alarm.repTarget)}`}
         </Text>
         <View style={styles.days}>
-          {DAY_LETTERS.map((letter, i) => {
+          {strings.dayLetters.map((letter, i) => {
             const active = alarm.days.includes(i);
             return (
               <View
@@ -120,10 +121,7 @@ export function AlarmCard({
     return card;
   }
   return (
-    <Swipeable
-      renderRightActions={renderRightActions}
-      overshootRight={false}
-    >
+    <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
       {card}
     </Swipeable>
   );

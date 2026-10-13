@@ -12,36 +12,18 @@ import {
   space,
   type as typeScale,
 } from '../../theme/tokens';
-import { EXERCISE_INSTRUCTIONS } from '../workout/exerciseInstructions';
+import { useStrings } from '../i18n';
 import type { WorkoutCounter } from '../hooks/useWorkoutCounter';
 import type { ExerciseType, FramingState } from '../types';
 
 const RING_SIZE = 140;
 const STRIP_BG = 'rgba(10, 22, 46, 0.85)';
 
-/** Border, pill and framing-cue colour + copy per framing state. */
-const FRAMING_UI: Record<
-  FramingState,
-  { color: string; onColor: string; pill: string; cue: string | null }
-> = {
-  in_frame: {
-    color: primitives.success[500],
-    onColor: primitives.ink[950],
-    pill: 'In frame',
-    cue: null,
-  },
-  partial: {
-    color: primitives.warning[500],
-    onColor: primitives.ink[950],
-    pill: 'Partly in frame',
-    cue: 'Step back a little',
-  },
-  none: {
-    color: primitives.danger[500],
-    onColor: primitives.white,
-    pill: 'Not in frame',
-    cue: 'Step into frame',
-  },
+/** Border and pill colours per framing state (words come from strings). */
+const FRAMING_COLORS: Record<FramingState, { color: string; onColor: string }> = {
+  in_frame: { color: primitives.success[500], onColor: primitives.ink[950] },
+  partial: { color: primitives.warning[500], onColor: primitives.ink[950] },
+  none: { color: primitives.danger[500], onColor: primitives.white },
 };
 
 interface WorkoutViewProps {
@@ -70,9 +52,13 @@ export function WorkoutView({
   cueOverride,
 }: WorkoutViewProps) {
   const t = getSemanticTokens('alarm');
+  const strings = useStrings();
   const insets = useSafeAreaInsets();
   const { mode, count, target, framing, cameraLive } = counter;
-  const framingUi = FRAMING_UI[framing];
+  const framingUi = {
+    ...FRAMING_COLORS[framing],
+    ...strings.workout.framing[framing],
+  };
   const showsFraming = cameraLive || mode === 'demo';
   const unit = mode === 'steps' ? 'steps' : 'reps';
 
@@ -95,14 +81,14 @@ export function WorkoutView({
     cue = cueOverride;
     cueColor = primitives.success[500];
   } else if (counter.awaitingPermission) {
-    cue = 'Allow camera access to count reps';
+    cue = strings.workout.allowCamera;
     cueColor = primitives.warning[500];
   } else if (mode === 'steps') {
     if (counter.stepsUnavailable) {
-      cue = 'This phone can’t count steps';
+      cue = strings.workout.noSteps;
       cueColor = primitives.danger[500];
     } else {
-      cue = count === 0 ? 'Walk or march in place' : null;
+      cue = count === 0 ? strings.workout.walk : null;
     }
   } else if (framingUi.cue) {
     cue = framingUi.cue;
@@ -114,10 +100,10 @@ export function WorkoutView({
   const instructions =
     mode === 'steps'
       ? {
-          setup: 'The camera can’t count right now — walk it off instead.',
-          howTo: EXERCISE_INSTRUCTIONS.steps.howTo,
+          setup: strings.workout.stepsSetup,
+          howTo: strings.instructions.steps.howTo,
         }
-      : EXERCISE_INSTRUCTIONS[exercise];
+      : strings.instructions[exercise];
 
   return (
     <View style={[styles.container, { backgroundColor: primitives.surfaceDark }]}>
@@ -139,13 +125,13 @@ export function WorkoutView({
           {mode === 'demo' ? (
             <View style={[styles.pill, { backgroundColor: primitives.warning[500] }]}>
               <Text style={[typeScale.bodySmall, { color: primitives.ink[950] }]}>
-                Demo mode
+                {strings.workout.demo}
               </Text>
             </View>
           ) : mode === 'steps' ? (
             <View style={[styles.pill, { backgroundColor: primitives.warning[500] }]}>
               <Text style={[typeScale.bodySmall, { color: primitives.ink[950] }]}>
-                Step backup
+                {strings.workout.stepBackup}
               </Text>
             </View>
           ) : (
@@ -182,10 +168,10 @@ export function WorkoutView({
         <RepProgressRing done={count} target={target} size={RING_SIZE} />
         <View style={styles.stripText}>
           <Text style={[typeScale.display, styles.target, { color: t.textPrimary }]}>
-            {`of ${target}`}
+            {strings.workout.of(target)}
           </Text>
           <Text style={[typeScale.body, { color: t.textSecondary }]}>
-            {`${Math.max(target - count, 0)} ${unit} to go`}
+            {strings.workout.toGo(Math.max(target - count, 0), unit)}
           </Text>
           {cue && (
             <Text

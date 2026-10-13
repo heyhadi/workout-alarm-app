@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../components/Screen';
+import { useStrings } from '../../i18n';
 import { AlarmForm, type AlarmFormValue } from '../../components/AlarmForm';
 import { getSemanticTokens } from '../../../theme/helpers';
 import { type as typeScale } from '../../../theme/tokens';
@@ -14,6 +15,7 @@ import type { Alarm } from '../../types';
 /** Edit an existing alarm. Blocked by the list screen inside lock-in. */
 export default function EditAlarmScreen() {
   const router = useRouter();
+  const strings = useStrings();
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = getSemanticTokens('day');
   const [alarm, setAlarm] = useState<Alarm | null>(null);
@@ -27,7 +29,9 @@ export default function EditAlarmScreen() {
   if (!alarm) {
     return (
       <Screen>
-        <Text style={[typeScale.body, { color: t.textSecondary }]}>Loading…</Text>
+        <Text style={[typeScale.body, { color: t.textSecondary }]}>
+          {strings.common.loading}
+        </Text>
       </Screen>
     );
   }
@@ -61,7 +65,11 @@ export default function EditAlarmScreen() {
 
   return (
     <Screen>
-      <AlarmForm initial={initial} submitLabel="Save changes" onSubmit={handleSubmit} />
+      <AlarmForm
+        initial={initial}
+        submitLabel={strings.form.saveChanges}
+        onSubmit={handleSubmit}
+      />
     </Screen>
   );
 }

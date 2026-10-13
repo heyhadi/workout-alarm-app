@@ -4,16 +4,23 @@ import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { Difficulty, ExerciseType } from '../types';
 import { STEPS_PER_REP } from '../native/steps';
-import { ExerciseChip, EXERCISE_LABELS } from './ExerciseChip';
+import { ExerciseChip } from './ExerciseChip';
 import { PrimaryButton } from './PrimaryButton';
 import { TimeWheel } from './TimeWheel';
 import { SoundPicker } from './SoundPicker';
-import { formatTimeUntil, nextFireTimeMs } from '../workout/scheduling';
+import { nextFireTimeMs, timeUntil } from '../workout/scheduling';
+import { useStrings } from '../i18n';
 
-const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const REP_PRESETS = [10, 20, 30];
 const DIFFICULTIES: Difficulty[] = ['easy', 'standard', 'hard'];
 const LOCK_IN_OPTIONS = [15, 30, 45, 60];
+/** Exercises the camera can count (steps is the backup, not a choice). */
+const CAMERA_EXERCISES: ExerciseType[] = [
+  'squats',
+  'pushups',
+  'jumping_jacks',
+  'situps',
+];
 const PRESET_TIMES = ['05:30', '06:00', '06:30', '07:00'];
 const COUNTDOWN_REFRESH_MS = 30_000;
 
@@ -42,6 +49,7 @@ interface AlarmFormProps {
  */
 export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
   const t = getSemanticTokens('day');
+  const strings = useStrings();
   const [value, setValue] = useState<AlarmFormValue>(initial);
   // Clock for the "Rings in…" line; ticks so the countdown stays honest
   // while the form sits open.
@@ -66,17 +74,21 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
     onSubmit(value);
   };
 
-  const ringsIn = formatTimeUntil(nextFireTimeMs(value.time, value.days, now), now);
+  const ringsIn = strings.timeUntil(
+    timeUntil(nextFireTimeMs(value.time, value.days, now), now),
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
-      <Text style={[typeScale.caption, { color: t.textSecondary }]}>Time</Text>
+      <Text style={[typeScale.caption, { color: t.textSecondary }]}>
+        {strings.form.time}
+      </Text>
       <TimeWheel value={value.time} onChange={(time) => set('time', time)} />
       <Text
         style={[typeScale.label, styles.ringsIn, { color: primitives.energy[600] }]}
         accessibilityLiveRegion="polite"
       >
-        {`Rings in ${ringsIn}`}
+        {strings.form.ringsIn(ringsIn)}
       </Text>
       <View style={styles.row}>
         {PRESET_TIMES.map((time) => {
@@ -109,10 +121,10 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       </View>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Repeat
+        {strings.form.repeat}
       </Text>
       <View style={styles.row}>
-        {DAY_LETTERS.map((letter, i) => {
+        {strings.dayLetters.map((letter, i) => {
           const active = value.days.includes(i);
           return (
             <Pressable
@@ -137,23 +149,21 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       </View>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Exercise
+        {strings.form.exercise}
       </Text>
       <View style={styles.row}>
-        {(Object.keys(EXERCISE_LABELS) as ExerciseType[])
-          .filter((e) => e !== 'steps')
-          .map((e) => (
-            <ExerciseChip
-              key={e}
-              exercise={e}
-              selected={value.exercise === e}
-              onSelect={(ex) => set('exercise', ex)}
-            />
-          ))}
+        {CAMERA_EXERCISES.map((e) => (
+          <ExerciseChip
+            key={e}
+            exercise={e}
+            selected={value.exercise === e}
+            onSelect={(ex) => set('exercise', ex)}
+          />
+        ))}
       </View>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Reps
+        {strings.form.reps}
       </Text>
       <View style={styles.row}>
         {REP_PRESETS.map((n) => {
@@ -184,7 +194,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       </View>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Difficulty
+        {strings.form.difficulty}
       </Text>
       <View style={styles.row}>
         {DIFFICULTIES.map((d) => {
@@ -207,7 +217,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
                   { color: active ? t.bgSurface : t.textPrimary },
                 ]}
               >
-                {d}
+                {strings.difficulty[d]}
               </Text>
             </Pressable>
           );
@@ -215,7 +225,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       </View>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Sound
+        {strings.form.sound}
       </Text>
       <SoundPicker
         value={value.ringtone}
@@ -223,14 +233,14 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       />
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Backup if camera fails
+        {strings.form.backup}
       </Text>
       <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-        {`Walk it off: ${STEPS_PER_REP} steps per rep, counted by the step sensor. Used when the camera is blocked, denied or can’t see you for 2 minutes.`}
+        {strings.form.backupBody(STEPS_PER_REP)}
       </Text>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Locks before firing
+        {strings.form.locksBefore}
       </Text>
       <View style={styles.row}>
         {LOCK_IN_OPTIONS.map((mins) => {
@@ -253,7 +263,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
                   { color: active ? t.textOnAccent : t.textPrimary },
                 ]}
               >
-                {`${mins}m`}
+                {strings.form.minutes(mins)}
               </Text>
             </Pressable>
           );
@@ -262,8 +272,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       <Text
         style={[typeScale.bodySmall, { color: t.textSecondary, marginTop: space.xs }]}
       >
-        Locks 30 min before it fires — inside the window the alarm cannot be edited,
-        weakened, or deleted.
+        {strings.form.lockNote(value.lockInMinutes)}
       </Text>
 
       <View style={styles.cta}>

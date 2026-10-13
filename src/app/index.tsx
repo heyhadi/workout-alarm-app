@@ -9,7 +9,8 @@ import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
 import { isOnboardingDone, markOnboardingDone } from '../storage/settings';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
-import { formatTimeUntil } from '../workout/scheduling';
+import { timeUntil } from '../workout/scheduling';
+import { useStrings } from '../i18n';
 import {
   applyAlarmSchedule,
   cancelAlarm,
@@ -37,6 +38,7 @@ export default function AlarmListScreen() {
   const [nextFire, setNextFire] = useState<number | undefined>(undefined);
   // Clock reading taken with nextFire, so render stays pure.
   const [refreshedAt, setRefreshedAt] = useState(0);
+  const strings = useStrings();
   const readiness = useAlarmReadiness();
   const notReady = readiness.pending;
 
@@ -108,12 +110,12 @@ export default function AlarmListScreen() {
     <Screen>
       <View style={styles.header}>
         <Text style={[typeScale.display, { color: t.textPrimary, fontSize: 32 }]}>
-          Alarms
+          {strings.alarms.title}
         </Text>
         {streak > 0 && (
           <View style={[styles.streak, { backgroundColor: primitives.energy[50] }]}>
             <Text style={[typeScale.label, { color: primitives.energy[600] }]}>
-              {`🔥 ${streak} morning${streak === 1 ? '' : 's'}`}
+              {`🔥 ${strings.streak(streak)}`}
             </Text>
           </View>
         )}
@@ -122,8 +124,8 @@ export default function AlarmListScreen() {
       <View style={styles.links}>
         {(
           [
-            ['Practice', '/practice'],
-            ['Settings', '/settings'],
+            [strings.alarms.practice, '/practice'],
+            [strings.alarms.settings, '/settings'],
           ] as const
         ).map(([label, href]) => (
           <Pressable
@@ -151,10 +153,10 @@ export default function AlarmListScreen() {
           ]}
         >
           <Text style={[typeScale.label, { color: primitives.energy[600] }]}>
-            Your alarm isn’t ready
+            {strings.alarms.notReadyTitle}
           </Text>
           <Text style={[typeScale.bodySmall, { color: t.textPrimary }]}>
-            {`${notReady} setting${notReady === 1 ? '' : 's'} missing — it may ring without opening the workout.`}
+            {strings.alarms.notReadyBody(notReady)}
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -162,7 +164,7 @@ export default function AlarmListScreen() {
             style={[styles.fixButton, { backgroundColor: primitives.energy[600] }]}
           >
             <Text style={[typeScale.bodySmall, { color: primitives.white }]}>
-              Fix now
+              {strings.alarms.fixNow}
             </Text>
           </Pressable>
         </View>
@@ -174,7 +176,9 @@ export default function AlarmListScreen() {
         <Text
           style={[typeScale.body, { color: t.textSecondary, marginBottom: space.md }]}
         >
-          {`Next alarm in ${formatTimeUntil(nextFire, refreshedAt)}`}
+          {strings.alarms.nextAlarm(
+            strings.timeUntil(timeUntil(nextFire, refreshedAt)),
+          )}
         </Text>
       )}
 
@@ -187,7 +191,7 @@ export default function AlarmListScreen() {
             <AlarmCard
               alarm={item}
               locked={locked}
-              lockLabel={locked ? `Locked — fires ${item.time}` : ''}
+              lockLabel={locked ? strings.alarms.locked(item.time) : ''}
               onToggle={(enabled) => handleToggle(item, enabled)}
               // Inside the lock-in window the alarm can't be edited or weakened.
               onPress={() => {
@@ -199,14 +203,17 @@ export default function AlarmListScreen() {
         }}
         ListEmptyComponent={
           <Text style={[typeScale.body, { color: t.textSecondary }]}>
-            No alarms yet. Add your first one below.
+            {strings.alarms.empty}
           </Text>
         }
         contentContainerStyle={styles.list}
       />
 
       <View style={styles.cta}>
-        <PrimaryButton label="+ New alarm" onPress={() => router.push('/alarm/new')} />
+        <PrimaryButton
+          label={strings.alarms.newAlarm}
+          onPress={() => router.push('/alarm/new')}
+        />
       </View>
     </Screen>
   );

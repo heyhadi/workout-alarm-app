@@ -11,6 +11,7 @@ import {
 import { selectionAsync } from 'expo-haptics';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, type as typeScale } from '../../theme/tokens';
+import { useStrings } from '../i18n';
 
 const ITEM_HEIGHT = 44;
 const VISIBLE_ROWS = 5;
@@ -125,6 +126,7 @@ interface TimeWheelProps {
  */
 export function TimeWheel({ value, onChange }: TimeWheelProps) {
   const t = getSemanticTokens('day');
+  const strings = useStrings();
   const [h, m] = value.split(':').map(Number);
   const hour = Number.isFinite(h) ? h : 0;
   const minute = Number.isFinite(m) ? m : 0;
@@ -140,14 +142,14 @@ export function TimeWheel({ value, onChange }: TimeWheelProps) {
       <WheelColumn
         values={HOURS}
         selected={hour}
-        label="Hour"
+        label={strings.form.hour}
         onChange={(i) => onChange(`${HOURS[i]}:${MINUTES[minute]}`)}
       />
       <Text style={[typeScale.display, styles.colon, { color: t.textPrimary }]}>:</Text>
       <WheelColumn
         values={MINUTES}
         selected={minute}
-        label="Minute"
+        label={strings.form.minute}
         onChange={(i) => onChange(`${HOURS[hour]}:${MINUTES[i]}`)}
       />
     </View>

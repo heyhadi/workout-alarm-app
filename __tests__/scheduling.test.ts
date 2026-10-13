@@ -1,9 +1,5 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import {
-  formatTimeUntil,
-  isInLockInWindow,
-  nextFireTimeMs,
-} from '../src/workout/scheduling';
+import { timeUntil, isInLockInWindow, nextFireTimeMs } from '../src/workout/scheduling';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -61,25 +57,25 @@ describe('isInLockInWindow', () => {
   });
 });
 
-describe('formatTimeUntil', () => {
+describe('timeUntil', () => {
   const now = new Date('2026-10-12T23:18:00').getTime();
   const at = (mins: number) => now + mins * 60_000;
 
-  it('shows hours and minutes under a day', () => {
-    expect(formatTimeUntil(at(7 * 60 + 12), now)).toBe('7 h 12 min');
+  it('splits into hours and minutes under a day', () => {
+    expect(timeUntil(at(7 * 60 + 12), now)).toEqual({ days: 0, hours: 7, minutes: 12 });
   });
 
-  it('shows minutes only under an hour', () => {
-    expect(formatTimeUntil(at(45), now)).toBe('45 min');
+  it('counts whole days for repeat alarms days away', () => {
+    expect(timeUntil(at(2 * 1440 + 3 * 60 + 30), now)).toEqual({
+      days: 2,
+      hours: 3,
+      minutes: 30,
+    });
   });
 
-  it('shows days and hours for repeat alarms days away', () => {
-    expect(formatTimeUntil(at(2 * 1440 + 3 * 60 + 30), now)).toBe('2 d 3 h');
-    expect(formatTimeUntil(at(6 * 1440), now)).toBe('6 d');
-  });
-
-  it('never goes negative', () => {
-    expect(formatTimeUntil(now + 20_000, now)).toBe('under a minute');
-    expect(formatTimeUntil(now - 60_000, now)).toBe('under a minute');
+  it('is all zero under a minute and never negative', () => {
+    const zero = { days: 0, hours: 0, minutes: 0 };
+    expect(timeUntil(now + 20_000, now)).toEqual(zero);
+    expect(timeUntil(now - 60_000, now)).toEqual(zero);
   });
 });
