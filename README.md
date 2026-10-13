@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.png" width="84" alt="Workout Alarm icon">
+  <img src="assets/icon.png" width="96" alt="Workout Alarm icon: an orange rep ring around an alarm bell">
 </p>
 
 <h1 align="center">Workout Alarm</h1>
@@ -12,57 +12,68 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/heyhadi/workout-alarm-app/releases/latest"><strong>Download the APK</strong></a> ·
   <a href="#what-it-does">What it does</a> ·
   <a href="#how-it-works">How it works</a> ·
-  <a href="#development">Development</a> ·
-  <a href="#coming-next">Coming next</a>
+  <a href="#development">Development</a>
 </p>
 
 *Workout Alarm* is a strict Android alarm clock built with React Native + Expo. It exists for one
-reason: mornings where willpower loses. This is a personal project.
+reason: mornings where willpower loses. English and Bahasa Indonesia. This is a personal project.
 
 <p align="center">
-  <img src="docs/images/1-alarm-list.png" width="220" alt="Alarm list">
-  <img src="docs/images/2-new-alarm.png" width="220" alt="New alarm">
-  <img src="docs/images/3-ringing-workout.png" width="220" alt="Ringing / workout">
+  <img src="docs/images/1-new-alarm.png" width="230" alt="New alarm: inline time wheel and 'Rings in' countdown">
+  <img src="docs/images/2-readiness.png" width="230" alt="Alarm readiness checklist, all green">
 </p>
-
-<p align="center"><sub>Design mockups — the visual target for v1. Real screenshots once the app ships.</sub></p>
 
 ## What it does
 
 | | |
 |---|---|
-| **An alarm with a price of admission.** Set the time, choose squats, push-ups, jumping jacks or sit-ups, and set the rep target. When it rings, the screen locks down and the camera opens — the alarm stops only when the target is verified complete. | **Reps counted by the camera, not by you.** On-device ML Kit pose detection tracks your joints and counts only full-range reps at a human tempo. Half-reps and fast flailing don't count. Video frames never leave your phone. |
-| **No dismiss. No snooze. No escape hatch.** The ringing screen has no buttons at all. Lock-task mode swallows Back, Home and recents while the alarm is active, and the foreground service keeps ringing through the lock screen. | **Survives everything short of willpower.** Exact alarms via `AlarmManager.setAlarmClock()`, re-armed automatically after reboots, dead batteries and clock changes. The workout debt never expires. |
-| **Practice mode.** Check your camera framing and try the rep counter with zero stakes — no alarm, no lockdown, just you and the counter. | **Your data stays yours.** Alarms and history live in SQLite on the device, settings in MMKV. No account, no cloud, no analytics. |
+| **An alarm with a price of admission.** Set the time on an inline wheel, choose squats, push-ups, jumping jacks or sit-ups, and a rep target. When it rings, the workout takes over the screen — even if you're using another app — and the alarm stops only when the target is verified. | **Reps counted by the camera, not by you.** On-device ML Kit pose detection tracks your joints and counts only full-range reps at a human tempo. The camera fills the screen and a coloured border tells you from across the room whether you're in frame. Video never leaves your phone. |
+| **No dismiss. No snooze. No escape hatch.** The ringing screen has no buttons at all. Lock-task mode swallows Back, Home and recents, and the foreground service keeps ringing through the lock screen. | **A backup that still makes you move.** Camera denied, broken, or nobody in frame for 2 minutes? The alarm switches to the step counter: 3 steps per rep. |
+| **Survives everything short of willpower.** Every alarm is re-armed after reboots, dead batteries and clock changes; repeating alarms arm their next morning when you finish; a finished alarm never rings twice. | **Ready before it matters.** A readiness checklist walks through every permission the alarm needs — including Xiaomi's own switches — and the alarm list nags until they're all green. |
+| **Practice mode.** The real workout screen and the real counter, with no alarm and no lockdown: try your framing and your squats before 6 a.m. does. | **Your sound, your language.** Pick any alarm sound on your phone (never silent). Use the app in English or Bahasa Indonesia. |
+| **Updates itself.** Every build on `main` is published as a GitHub release; the app offers it in-app and installs it only if it's newer and signed with the same key. | **Your data stays yours.** Alarms and history live in SQLite on the device, settings in MMKV. No account, no cloud, no analytics. |
+
+## Install
+
+1. Download the latest APK from [Releases](https://github.com/heyhadi/workout-alarm-app/releases/latest) and open it (allow installs from your browser when Android asks).
+2. Open the app — the readiness checklist shows what to allow. On Xiaomi/HyperOS, also switch on Autostart there.
+3. Later updates appear as **Update available** on the alarm list.
+
+Android only. An iPhone version can't be truly unskippable — iOS always offers a Stop button — so it isn't planned yet.
 
 ## How it works
 
 **The flow.** Set → Lock → Ring → Move → Verify → Release. At the scheduled time `AlarmModule`
-fires an exact alarm and `RingingService` starts as a foreground service: alarm-stream audio loop,
-volume re-assertion, vibration, and a full-screen intent over the lock screen. `LockdownModule`
-enters lock-task mode; `PoseModule` opens the front camera and counts. `releaseAlarm()` — called
-only after the rep target is verified — is the single code path that stops the sound, exits
-lock-task, and records the session.
+fires an exact alarm and `RingingService` starts as a foreground service: alarm-stream audio loop
+(your chosen sound, falling back to the phone default), volume re-assertion, vibration, a
+full-screen intent over the lock screen, and a direct launch of the workout when the phone is in
+use. `LockdownModule` enters lock-task mode; `PoseModule` opens the front camera and counts.
+`releaseAlarm()` — called only after the target is verified — is the single code path that stops
+the sound, exits lock-task, records the session and arms the next occurrence.
 
-**Rep verification.** Each analyzed frame yields one joint angle for the active exercise (knee for
-squats, elbow for push-ups, shoulder for jumping jacks, hip for sit-ups). A small state machine
-in Kotlin — mirroring `src/workout/repCounter.ts` — counts a rep only when the angle travels the
-full range and the cycle lands inside a human tempo window. Thresholds live in
-`EXERCISE_COUNTER_CONFIGS`; the TypeScript copy exists for tests and the demo fallback.
+**Rep verification.** Each analyzed frame yields one value per exercise, measured on whichever
+side of the body the camera sees best: hip drop for squats (works facing the camera), elbow angle
+for push-ups, shoulder angle for jumping jacks, hip angle for sit-ups. A state machine counts a rep
+only when the value travels the full range inside a human tempo window, and only while the joints
+it needs are in frame. Thresholds live once, in `EXERCISE_COUNTER_CONFIGS`
+(`src/workout/repCounter.ts`), and are passed to the native counter.
 
-**Native modules.** Five Kotlin bridges, applied by config plugins on every prebuild so `android/`
-stays a pure build artifact:
+**Native modules.** Kotlin sources in `native-modules/`, applied by config plugins on every
+prebuild so `android/` stays a pure build artifact:
 
-1. **AlarmModule** — `AlarmManager.setAlarmClock()` exact scheduling; mirrors the schedule to SharedPreferences for the receivers.
-2. **RingingModule + RingingService** — foreground service: alarm loop, volume re-assertion, vibration, full-screen intent. `releaseAlarm()` is the only exit.
-3. **BootReceiver + TimeChangeReceiver** — re-arm after restarts, dead batteries, and clock changes.
+1. **AlarmModule + AlarmStore** — `AlarmManager.setAlarmClock()` per alarm, mirrored to storage so receivers can re-arm without JS.
+2. **RingingModule + RingingService** — the ringing foreground service, alarm-sound picker, and permission readiness checks.
+3. **BootReceiver + TimeChangeReceiver** — re-arm every alarm after restarts and clock changes; resume one still owed.
 4. **LockdownModule** — lock-task (kiosk) mode while ringing.
-5. **PoseModule** — CameraX + ML Kit Pose Detection; only rep events cross the bridge, never video.
+5. **PoseModule + PoseCameraView** — CameraX + ML Kit Pose Detection in one camera session; only rep and framing events cross the bridge, never video.
+6. **StepModule** — hardware step counter for the camera backup.
+7. **UpdateModule** — downloads a newer release APK, verifies package, version and signing key, and hands it to Android's installer.
 
 **Anti-bypass.** The ringing screen renders zero buttons; the release path is the only code that can
-stop the service; the schedule is mirrored to disk so receivers re-arm it without the app running.
+stop the service; every armed alarm is mirrored to disk so receivers re-arm it without the app running.
 
 ## Development
 
@@ -71,18 +82,20 @@ This project uses native modules, so it runs as an Expo **development build**, n
 ```sh
 npm install --legacy-peer-deps
 npx expo prebuild              # generate android/ + apply config plugins
-npx eas-cli build --platform android --profile development   # install the APK on your phone
+npx expo run:android           # build and install a dev build on a USB-connected phone
 npx expo start --dev-client    # then develop with live reload
 npm test                       # vitest
 npm run typecheck && npm run lint
 ```
 
-- Stack: Expo SDK 57, React Native 0.81, TypeScript strict, Expo Router, expo-sqlite, react-native-mmkv, expo-camera.
+- Stack: Expo SDK 57, React Native 0.86, TypeScript strict, Expo Router, expo-sqlite, react-native-mmkv, expo-camera.
 - `android/` is generated and gitignored — native behavior lives in `app.json`, `plugins/` (config plugins) and `native-modules/` (canonical Kotlin sources).
-- Tests cover the rep-counter state machine, the scheduling logic and the design tokens (`__tests__/`, vitest).
-- Husky + lint-staged run ESLint, Prettier and `tsc --noEmit` on staged files.
+- UI text lives in `src/i18n/` (`en.ts`, `id.ts`); the Indonesian file is typed against the English one, so a missing translation fails the build.
+- Icon and splash sources are SVGs in `assets/source/`.
+- Tests cover the rep counter, scheduling, readiness checklist, release parsing, languages and design tokens (`__tests__/`, vitest).
+- CI (`.github/workflows/android-build.yml`) builds a signed release APK on every push to `main` and publishes it as release `build-<run number>`.
 
-**Demo mode.** Without the native bridges (Expo Go / web), the ringing screen runs a clearly-labelled
+**Demo mode.** Without the native bridges (Expo Go / web), the workout screen runs a clearly-labelled
 demo mode: synthetic joint angles through the real `RepCounter` state machine, so the full
 set → ring → verify → release flow is exercisable end to end. Verified counting needs a dev build.
 

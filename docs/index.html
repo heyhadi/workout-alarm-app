@@ -8,6 +8,8 @@
 <meta property="og:title" content="Workout Alarm — The alarm you can't snooze">
 <meta property="og:description" content="Set the time, pick a workout, go to sleep. Silence costs reps.">
 <meta property="og:type" content="website">
+<meta property="og:image" content="images/icon.png">
+<link rel="icon" type="image/png" href="images/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -35,8 +37,7 @@
 
   header { padding: 28px 0; display: flex; align-items: center; justify-content: space-between; }
   .brand { display: flex; align-items: center; gap: 12px; font-family: 'Plus Jakarta Sans'; font-weight: 800; font-size: 20px; }
-  .brand .dot { width: 34px; height: 34px; border-radius: 10px; background: var(--energy);
-    display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .brand img { width: 36px; height: 36px; border-radius: 10px; }
   nav a { color: var(--text-secondary); text-decoration: none; margin-left: 28px; font-size: 15px; }
   nav a:hover { color: var(--text); }
 
@@ -98,7 +99,7 @@
 <body>
 
 <header class="wrap">
-  <div class="brand"><span class="dot">⏰</span> Workout Alarm</div>
+  <div class="brand"><img src="images/icon.png" alt=""> Workout Alarm</div>
   <nav>
     <a href="#how">How it works</a>
     <a href="#features">Features</a>
@@ -111,10 +112,10 @@
   <h1>Your alarm doesn't care<br>about your <span class="accent">excuses.</span></h1>
   <p>Set the time. Pick a workout. Go to sleep. When it rings, the screen locks down and the camera opens — silence costs exactly the reps you promised yourself last night.</p>
   <div class="cta-row">
-    <a class="btn btn-primary" href="https://github.com/heyhadi/workout-alarm-app">Get it on GitHub</a>
-    <a class="btn btn-ghost" href="#how">How it works</a>
+    <a class="btn btn-primary" href="https://github.com/heyhadi/workout-alarm-app/releases/latest">Download the APK</a>
+    <a class="btn btn-ghost" href="https://github.com/heyhadi/workout-alarm-app">View on GitHub</a>
   </div>
-  <p class="note">Android · Free &amp; open source · No account, no ads, no tracking</p>
+  <p class="note">Android · English &amp; Bahasa Indonesia · Free &amp; open source · No account, no ads, no tracking</p>
 
   <div class="counter">
     <div class="reps">07<span style="color:var(--muted);font-size:40px;">/20</span></div>
@@ -125,19 +126,15 @@
 <section id="screens" style="padding-top:20px;">
   <div class="wrap">
     <h2>A closer look</h2>
-    <p class="sub">Design mockups — the visual target for v1.</p>
+    <p class="sub">Real screens from the app.</p>
     <div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;">
       <div style="text-align:center;">
-        <img src="images/1-alarm-list.png" alt="Alarm list screen" style="width:220px;border-radius:24px;border:1px solid var(--surface-dark);">
-        <p style="color:var(--text-secondary);font-size:14px;margin-top:12px;">Alarm list</p>
+        <img src="images/1-new-alarm.png" alt="New alarm with the time wheel and live countdown" style="width:230px;border-radius:24px;border:1px solid var(--surface-dark);">
+        <p style="color:var(--text-secondary);font-size:14px;margin-top:12px;">Set it in seconds</p>
       </div>
       <div style="text-align:center;">
-        <img src="images/2-new-alarm.png" alt="New alarm screen" style="width:220px;border-radius:24px;border:1px solid var(--surface-dark);">
-        <p style="color:var(--text-secondary);font-size:14px;margin-top:12px;">New alarm</p>
-      </div>
-      <div style="text-align:center;">
-        <img src="images/3-ringing-workout.png" alt="Ringing workout screen" style="width:220px;border-radius:24px;border:1px solid var(--surface-dark);">
-        <p style="color:var(--text-secondary);font-size:14px;margin-top:12px;">Ringing / workout</p>
+        <img src="images/2-readiness.png" alt="Alarm readiness checklist" style="width:230px;border-radius:24px;border:1px solid var(--surface-dark);">
+        <p style="color:var(--text-secondary);font-size:14px;margin-top:12px;">Ready before it matters</p>
       </div>
     </div>
   </div>
@@ -150,8 +147,8 @@
     <div class="steps">
       <div class="step"><div class="n">01</div><h3>Set</h3><p>Time, workout, rep target. Done in 20 seconds.</p></div>
       <div class="step"><div class="n">02</div><h3>Lock</h3><p>Screen pins itself. Back, Home, recents — gone.</p></div>
-      <div class="step"><div class="n">03</div><h3>Ring</h3><p>Full-screen alarm over the lock screen. No buttons.</p></div>
-      <div class="step"><div class="n">04</div><h3>Move</h3><p>Front camera opens. The counter is watching.</p></div>
+      <div class="step"><div class="n">03</div><h3>Ring</h3><p>Takes over the screen — locked or mid-scroll. No buttons.</p></div>
+      <div class="step"><div class="n">04</div><h3>Move</h3><p>The camera fills the screen. The counter is watching.</p></div>
       <div class="step"><div class="n">05</div><h3>Verify</h3><p>Only full-range reps at human tempo count.</p></div>
       <div class="step"><div class="n">06</div><h3>Release</h3><p>Target hit. Silence. Streak recorded.</p></div>
     </div>
@@ -164,11 +161,14 @@
     <p class="sub">Every bypass you can think of was designed against.</p>
     <div class="grid">
       <div class="card"><h3><span class="e">🚫</span>No snooze, ever</h3><p>The ringing screen renders zero buttons. There is nothing to tap, swipe, or negotiate with.</p></div>
-      <div class="card"><h3><span class="e">📷</span>Camera-verified reps</h3><p>On-device pose detection tracks your joints. Half-reps and fast flailing don't count.</p></div>
-      <div class="card"><h3><span class="e">🔒</span>Lockdown mode</h3><p>Lock-task pins the ringing screen. The phone is a single-purpose rep-counting machine until you're done.</p></div>
-      <div class="card"><h3><span class="e">🔁</span>Survives reboots</h3><p>Exact alarms, re-armed after restarts, dead batteries, and clock changes. The debt never expires.</p></div>
-      <div class="card"><h3><span class="e">🎯</span>Four workouts</h3><p>Squats, push-ups, jumping jacks, sit-ups — each with its own joint-angle model and tempo window.</p></div>
-      <div class="card"><h3><span class="e">🧪</span>Practice mode</h3><p>Test your camera framing and the counter with zero stakes. No alarm, no lockdown.</p></div>
+      <div class="card"><h3><span class="e">📷</span>Camera-verified reps</h3><p>On-device pose detection counts only full-range reps at a human tempo. A coloured border shows from across the room whether you&#39;re in frame.</p></div>
+      <div class="card"><h3><span class="e">🔒</span>Lockdown mode</h3><p>Lock-task pins the ringing screen, and the alarm takes over even while you&#39;re using another app.</p></div>
+      <div class="card"><h3><span class="e">🚶</span>A backup that still moves you</h3><p>Camera blocked or denied? The step counter takes over: 3 steps per rep. Never a free exit.</p></div>
+      <div class="card"><h3><span class="e">🔁</span>Survives reboots</h3><p>Every alarm is re-armed after restarts, dead batteries and clock changes. Repeating alarms arm tomorrow when you finish.</p></div>
+      <div class="card"><h3><span class="e">✅</span>Ready before it matters</h3><p>A readiness checklist covers every permission the alarm needs — Xiaomi&#39;s hidden switches included.</p></div>
+      <div class="card"><h3><span class="e">🧪</span>Practice mode</h3><p>The real workout screen and counter, with no alarm and no lockdown. Rehearse before 6 a.m. does.</p></div>
+      <div class="card"><h3><span class="e">🎵</span>Your sound, your language</h3><p>Any alarm sound on your phone (never silent), in English or Bahasa Indonesia.</p></div>
+      <div class="card"><h3><span class="e">⬆️</span>Updates itself</h3><p>New builds show up in the app and install only if they&#39;re newer and signed with the same key.</p></div>
     </div>
   </div>
 </section>
@@ -191,7 +191,7 @@
     <h2>Tomorrow morning is coming<br>whether you're ready or not.</h2>
     <p class="sub">Be ready.</p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="https://github.com/heyhadi/workout-alarm-app">Get Workout Alarm</a>
+      <a class="btn btn-primary" href="https://github.com/heyhadi/workout-alarm-app/releases/latest">Download the APK</a>
     </div>
   </div>
 </section>
