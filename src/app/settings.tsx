@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCameraPermissions } from 'expo-camera';
 import { useFocusEffect } from 'expo-router';
 import { Screen } from '../components/Screen';
@@ -82,8 +82,14 @@ export default function SettingsScreen() {
       detail: readiness
         ? readiness.notifications
           ? 'Allowed.'
-          : 'Off — the alarm screen can’t open. Turn on in app settings.'
+          : 'Off — tap to allow, or the workout screen can’t open.'
         : devBuildOnly,
+      onFix:
+        readiness && !readiness.notifications
+          ? () => {
+              Linking.openSettings().catch(() => undefined);
+            }
+          : undefined,
     },
     {
       label: 'Full-screen alarms',
@@ -177,7 +183,7 @@ export default function SettingsScreen() {
             key={level}
             onPress={() => pick(strictness, setStrictnessState, setStrictness)(level)}
             style={[
-              styles.card,
+              styles.option,
               {
                 backgroundColor: t.bgSurface,
                 borderColor: strictness === level ? t.actionPrimary : t.border,
@@ -206,7 +212,7 @@ export default function SettingsScreen() {
               pick(emergencyExit, setEmergencyExitState, setEmergencyExit)(mode)
             }
             style={[
-              styles.card,
+              styles.option,
               {
                 backgroundColor: t.bgSurface,
                 borderColor: emergencyExit === mode ? t.actionPrimary : t.border,
@@ -276,6 +282,14 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  // Selectable option: title above its description.
+  option: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: space.md,
+    marginBottom: space.sm,
+    gap: space.xs,
   },
   dot: { width: 12, height: 12, borderRadius: 6, marginRight: space.md },
   rowMain: { flex: 1 },
