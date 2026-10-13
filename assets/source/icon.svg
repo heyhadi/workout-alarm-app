@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 108 108">
+  <!-- Workout Alarm icon: the workout screen's rep ring around an alarm bell. -->
+  <rect width="108" height="108" fill="#0A162E"/>
+  <circle cx="54" cy="54" r="34" fill="none" stroke="#14294D" stroke-width="8"/>
+  <circle cx="54" cy="54" r="34" fill="none" stroke="#FF6B1A" stroke-width="8" stroke-linecap="round" stroke-dasharray="160 214" transform="rotate(-90 54 54)"/>
+  <circle cx="54" cy="33.5" r="3" fill="#FFFFFF"/>
+  <path d="M54 35.5c-8.6 0-14 6.6-14 14.8v9.4l-4.4 6.3h36.8l-4.4-6.3v-9.4c0-8.2-5.4-14.8-14-14.8z" fill="#FFFFFF"/>
+  <circle cx="54" cy="70.2" r="3.8" fill="#FFFFFF"/>
+</svg>
