@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlarmCard } from '../components/AlarmCard';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -7,34 +7,18 @@ import { Screen } from '../components/Screen';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
 import {
+  applyAlarmSchedule,
   cancelAlarm,
   isAlarmModuleAvailable,
   nextFireTimeMs,
-  scheduleAlarm,
 } from '../native/alarms';
 import {
   currentStreakDays,
   deleteAlarm,
   listAlarms,
   setAlarmEnabled,
-  upsertAlarm,
 } from '../storage/db';
 import type { Alarm } from '../types';
-
-const SAMPLE_ALARM: Alarm = {
-  id: 'sample-1',
-  time: '06:30',
-  days: [1, 2, 3, 4, 5],
-  exercise: 'squats',
-  repTarget: 20,
-  difficulty: 'standard',
-  ringtone: 'Morning energy',
-  backupExercise: 'steps',
-  lockInMinutes: 30,
-  enabled: true,
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-};
 
 function formatCountdown(fireMs: number): string {
   const diffMs = Math.max(0, fireMs - Date.now());
@@ -57,11 +41,7 @@ export default function AlarmListScreen() {
   const [lockedById, setLockedById] = useState<Map<string, boolean>>(() => new Map());
 
   const refresh = useCallback(async () => {
-    let rows = await listAlarms();
-    if (rows.length === 0) {
-      await upsertAlarm(SAMPLE_ALARM);
-      rows = await listAlarms();
-    }
+    const rows = await listAlarms();
     // Clock-dependent derivations live here (async), never during render.
     const now = Date.now();
     const locked = new Map<string, boolean>();
@@ -104,21 +84,8 @@ export default function AlarmListScreen() {
 
   const handleToggle = async (alarm: Alarm, enabled: boolean) => {
     await setAlarmEnabled(alarm.id, enabled);
-    try {
-      if (enabled && isAlarmModuleAvailable()) {
-        await scheduleAlarm({
-          alarmId: alarm.id,
-          time: alarm.time,
-          days: alarm.days,
-          exercise: alarm.exercise,
-          repTarget: alarm.repTarget,
-        });
-      } else if (isAlarmModuleAvailable()) {
-        await cancelAlarm(alarm.id);
-      }
-    } catch {
-      // Native module not linked yet (Expo Go) — DB state is the fallback.
-    }
+    // Native module not linked yet (Expo Go) — DB state is the fallback.
+    await applyAlarmSchedule({ ...alarm, enabled }).catch(() => undefined);
     await refresh();
   };
 
@@ -135,6 +102,27 @@ export default function AlarmListScreen() {
             </Text>
           </View>
         )}
+      </View>
+
+      <View style={styles.links}>
+        {(
+          [
+            ['Practice', '/practice'],
+            ['Settings', '/settings'],
+          ] as const
+        ).map(([label, href]) => (
+          <Pressable
+            key={href}
+            accessibilityRole="link"
+            onPress={() => router.push(href)}
+            style={[
+              styles.link,
+              { borderColor: t.border, backgroundColor: t.bgSurface },
+            ]}
+          >
+            <Text style={[typeScale.bodySmall, { color: t.textPrimary }]}>{label}</Text>
+          </Pressable>
+        ))}
       </View>
 
       {nextFire !== undefined && (
@@ -156,7 +144,10 @@ export default function AlarmListScreen() {
               locked={locked}
               lockLabel={locked ? `Locked — fires ${item.time}` : ''}
               onToggle={(enabled) => handleToggle(item, enabled)}
-              onPress={() => router.push(`/alarm/${item.id}`)}
+              // Inside the lock-in window the alarm can't be edited or weakened.
+              onPress={() => {
+                if (!locked) router.push(`/alarm/${item.id}`);
+              }}
               onDelete={() => handleDelete(item)}
             />
           );
@@ -187,6 +178,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: space.md,
     paddingVertical: space.xs,
+  },
+  links: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
+  link: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   list: { paddingBottom: space.xl },
   cta: { paddingTop: space.sm },

@@ -6,6 +6,8 @@ import { AlarmForm, type AlarmFormValue } from '../../components/AlarmForm';
 import { getSemanticTokens } from '../../../theme/helpers';
 import { type as typeScale } from '../../../theme/tokens';
 import { getAlarm, upsertAlarm } from '../../storage/db';
+import { applyAlarmSchedule } from '../../native/alarms';
+import { ensureAlarmPermissions } from '../../native/alarmPermissions';
 import type { Alarm } from '../../types';
 
 /** Edit an existing alarm. Blocked by the list screen inside lock-in. */
@@ -41,7 +43,12 @@ export default function EditAlarmScreen() {
   };
 
   const handleSubmit = async (value: AlarmFormValue) => {
-    await upsertAlarm({ ...alarm, ...value, updatedAt: Date.now() });
+    const updated = { ...alarm, ...value, updatedAt: Date.now() };
+    await upsertAlarm(updated);
+    // The native alarm must follow the edit, or it still fires at the old
+    // time with the old exercise.
+    await applyAlarmSchedule(updated).catch(() => undefined);
+    await ensureAlarmPermissions();
     router.back();
   };
 

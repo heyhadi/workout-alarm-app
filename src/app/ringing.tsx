@@ -20,22 +20,56 @@ import {
   startPoseDetection,
   stopPoseDetection,
 } from '../native/pose';
-import { isRingingModuleAvailable, releaseAlarm } from '../native/ringing';
+import {
+  getActiveRinging,
+  isRingingModuleAvailable,
+  releaseAlarm,
+} from '../native/ringing';
+import { applyAlarmSchedule } from '../native/alarms';
 import {
   enterLockTask,
   exitLockTask,
   isLockdownModuleAvailable,
 } from '../native/lockdown';
-import { getAlarm, recordSession } from '../storage/db';
+import { getAlarm, recordSession, setAlarmEnabled } from '../storage/db';
 import { incrementTotalWorkouts } from '../storage/settings';
 import { EXERCISE_LABELS } from '../components/ExerciseChip';
 import { RepCounter, EXERCISE_COUNTER_CONFIGS } from '../workout/repCounter';
 import { EXERCISE_INSTRUCTIONS } from '../workout/exerciseInstructions';
-import type { Alarm, FramingState } from '../types';
+import type { Alarm, ExerciseType, FramingState } from '../types';
 
 const DEMO_TICK_MS = 120;
 const RING_SIZE = 140;
 const STRIP_BG = 'rgba(10, 22, 46, 0.85)';
+
+/**
+ * Stand-in when the alarm's row is gone (deleted mid-ring, DB not ready):
+ * the ringing service still knows the exercise and target, and the
+ * workout must stay completable — "Waking up…" forever is no exit.
+ */
+function alarmFromRinging(
+  id: string,
+  exercise: ExerciseType,
+  repTarget: number,
+  nowMs: number,
+): Alarm {
+  const d = new Date(nowMs);
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return {
+    id,
+    time,
+    days: [],
+    exercise,
+    repTarget,
+    difficulty: 'standard',
+    ringtone: '',
+    backupExercise: 'steps',
+    lockInMinutes: 0,
+    enabled: false,
+    createdAt: nowMs,
+    updatedAt: nowMs,
+  };
+}
 
 /** Border, pill and framing-cue colour + copy per framing state. */
 const FRAMING_UI: Record<
@@ -90,18 +124,42 @@ export default function RingingScreen() {
   const [cameraFailed, setCameraFailed] = useState(false);
   const releasedRef = useRef(false);
   const alarmRef = useRef<Alarm | null>(null);
+  // False when running on the alarmFromRinging stand-in (no DB row).
+  const savedRef = useRef(false);
   const startedAtRef = useRef(0);
   const cameraGranted = permission?.granted ?? false;
 
   // Load the alarm; mark the moment ringing began.
   useEffect(() => {
-    startedAtRef.current = Date.now();
-    getAlarm(alarmId)
+    const startedAt = Date.now();
+    startedAtRef.current = startedAt;
+    let cancelled = false;
+    const load = async (): Promise<Alarm | null> => {
+      const saved = await getAlarm(alarmId).catch(() => null);
+      if (saved) {
+        savedRef.current = true;
+        return saved;
+      }
+      const ringing = await getActiveRinging().catch(() => null);
+      return ringing
+        ? alarmFromRinging(
+            alarmId || ringing.alarmId,
+            ringing.exercise,
+            ringing.repTarget,
+            startedAt,
+          )
+        : null;
+    };
+    load()
       .then((a) => {
+        if (cancelled || !a) return;
         setAlarm(a);
         alarmRef.current = a;
       })
       .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, [alarmId]);
 
   useEffect(() => {
@@ -154,6 +212,16 @@ export default function RingingScreen() {
         durationMs,
       }).catch(() => undefined);
       incrementTotalWorkouts();
+      // Arm what comes next: a repeating alarm's next occurrence, or switch
+      // a one-shot off (native already forgot it in releaseAlarm).
+      if (savedRef.current) {
+        const done = alarmRef.current;
+        if (done.days.length > 0) {
+          await applyAlarmSchedule(done).catch(() => undefined);
+        } else {
+          await setAlarmEnabled(done.id, false).catch(() => undefined);
+        }
+      }
       router.replace({
         pathname: '/done',
         params: {
@@ -169,6 +237,9 @@ export default function RingingScreen() {
   // Wire the pose pipeline (or the demo simulator).
   useEffect(() => {
     if (!alarm) return;
+    // Steps has no camera counting; its cue is derived during render.
+    if (alarm.exercise === 'steps') return;
+    const config = EXERCISE_COUNTER_CONFIGS[alarm.exercise];
 
     if (isPoseModuleAvailable()) {
       // The camera can't open without permission — start (or restart)
@@ -183,7 +254,7 @@ export default function RingingScreen() {
         }
       });
       const unsubFraming = addFramingListener((p) => setFraming(p.state));
-      startPoseDetection(alarm.exercise, alarm.repTarget).catch(() => {
+      startPoseDetection(alarm.exercise, alarm.repTarget, config).catch(() => {
         if (!cancelled) setCameraFailed(true);
       });
       return () => {
@@ -195,11 +266,6 @@ export default function RingingScreen() {
     }
 
     // DEMO MODE: synthetic joint angles through the real state machine.
-    // (Steps has no camera counting; its cue is derived during render.)
-    if (alarm.exercise === 'steps') {
-      return;
-    }
-    const config = EXERCISE_COUNTER_CONFIGS[alarm.exercise];
     const counter = new RepCounter(config);
     const top = config.upThresholdDeg + 5;
     const bottom = config.downThresholdDeg - 5;

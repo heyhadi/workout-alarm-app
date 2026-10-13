@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Stack, usePathname, useRootNavigationState, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
@@ -11,7 +11,8 @@ import {
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { initDatabase } from '../storage/db';
+import { initDatabase, listAlarms } from '../storage/db';
+import { syncAlarmSchedules } from '../native/alarms';
 import {
   addRingingIntentListener,
   getActiveRinging,
@@ -36,10 +37,20 @@ export default function RootLayout() {
     Inter_600SemiBold,
   });
 
+  // The Stack only mounts once fonts load; routing before then throws
+  // (swallowed) and the one-shot ringing intent is lost.
+  const navigationReady = Boolean(useRootNavigationState()?.key);
+
   useEffect(() => {
-    initDatabase().catch((error) => {
-      if (__DEV__) console.error('[db] init failed', error);
-    });
+    initDatabase()
+      .then(async () => {
+        if (!isRingingModuleAvailable()) return;
+        const ringing = await getActiveRinging().catch(() => null);
+        await syncAlarmSchedules(await listAlarms(), ringing?.alarmId ?? null);
+      })
+      .catch((error) => {
+        if (__DEV__) console.error('[db] init failed', error);
+      });
   }, []);
 
   useEffect(() => {
@@ -51,7 +62,7 @@ export default function RootLayout() {
   // intent, so a second read won't re-route. Falls back to asking the
   // ringing service directly, in case the intent was missed.
   useEffect(() => {
-    if (!isRingingModuleAvailable()) return;
+    if (!isRingingModuleAvailable() || !navigationReady) return;
     const routeToRinging = (
       intent: {
         alarmId: string;
@@ -85,7 +96,7 @@ export default function RootLayout() {
       appStateSub.remove();
       intentSub();
     };
-  }, [router]);
+  }, [router, navigationReady]);
 
   useEffect(() => {
     if (fontsLoaded) {

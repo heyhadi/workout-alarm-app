@@ -1,6 +1,13 @@
 package com.workoutalarm.app.ringing
 
+import android.app.AlarmManager
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
@@ -9,6 +16,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.workoutalarm.app.alarm.AlarmReceiver
+import com.workoutalarm.app.alarm.AlarmStore
 
 /**
  * RingingModule — JS handle on the ringing state.
@@ -45,6 +53,9 @@ class RingingModule(reactContext: ReactApplicationContext) :
         action = RingingService.ACTION_STOP
       }
       reactApplicationContext.stopService(stopIntent)
+      // Paid in full: drop the persisted debt so a reboot or clock change
+      // never rings this occurrence again. JS arms the next one.
+      AlarmStore.remove(reactApplicationContext, alarmId)
 
       val params = Arguments.createMap().apply {
         putString("alarmId", alarmId)
@@ -100,6 +111,51 @@ class RingingModule(reactContext: ReactApplicationContext) :
       promise.resolve(params)
     } else {
       promise.resolve(null)
+    }
+  }
+
+  /**
+   * What the phone allows the alarm to do. Each false means the alarm can
+   * ring without ever opening the workout screen (or not ring on time).
+   */
+  @ReactMethod
+  fun getAlarmReadiness(promise: Promise) {
+    val context = reactApplicationContext
+    val notifications = NotificationManagerCompat.from(context).areNotificationsEnabled()
+    val fullScreen = if (Build.VERSION.SDK_INT >= 34) {
+      (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+        .canUseFullScreenIntent()
+    } else {
+      true
+    }
+    val exactAlarms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      (context.getSystemService(Context.ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms()
+    } else {
+      true
+    }
+    promise.resolve(Arguments.createMap().apply {
+      putBoolean("notifications", notifications)
+      putBoolean("fullScreen", fullScreen)
+      putBoolean("exactAlarms", exactAlarms)
+    })
+  }
+
+  /** Open the system page where the user can allow full-screen alarms. */
+  @ReactMethod
+  fun openFullScreenIntentSettings(promise: Promise) {
+    try {
+      val intent = if (Build.VERSION.SDK_INT >= 34) {
+        Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+          .setData(Uri.parse("package:${reactApplicationContext.packageName}"))
+      } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+          .setData(Uri.parse("package:${reactApplicationContext.packageName}"))
+      }
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      reactApplicationContext.startActivity(intent)
+      promise.resolve(null)
+    } catch (e: Exception) {
+      promise.reject("SETTINGS_FAILED", e.message, e)
     }
   }
 }

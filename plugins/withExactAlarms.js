@@ -2,7 +2,7 @@
  * withExactAlarms — exact-alarm scheduling.
  *
  * - Manifest: SCHEDULE_EXACT_ALARM + USE_EXACT_ALARM (Android 12+).
- * - Copies AlarmModule.kt + AlarmReceiver.kt into android/.
+ * - Copies AlarmModule.kt + AlarmReceiver.kt + AlarmStore.kt into android/.
  *
  * The user grants "Alarms & reminders" on first schedule; without it
  * setAlarmClock() degrades and the plan's on-time guarantee is void —
@@ -18,6 +18,7 @@ const {
 const KOTLIN_FILES = [
   'com/workoutalarm/app/alarm/AlarmModule.kt',
   'com/workoutalarm/app/alarm/AlarmReceiver.kt',
+  'com/workoutalarm/app/alarm/AlarmStore.kt',
 ];
 
 const withExactAlarms = (config) => {

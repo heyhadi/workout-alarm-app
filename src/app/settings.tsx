@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCameraPermissions } from 'expo-camera';
+import { useFocusEffect } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
@@ -11,8 +12,13 @@ import {
   setLockInMinutes,
   setStrictness,
 } from '../storage/settings';
-import { isAlarmModuleAvailable } from '../native/alarms';
 import { isLockdownModuleAvailable } from '../native/lockdown';
+import {
+  getAlarmReadiness,
+  isRingingModuleAvailable,
+  openFullScreenIntentSettings,
+  type AlarmReadiness,
+} from '../native/ringing';
 import type { EmergencyExitMode, ExerciseType, StrictnessLevel } from '../types';
 import { ExerciseChip } from '../components/ExerciseChip';
 
@@ -20,6 +26,8 @@ interface HealthRow {
   label: string;
   ok: boolean | null;
   detail: string;
+  /** Where to fix it, when the system has a page for that. */
+  onFix?: () => void;
 }
 
 function SectionTitle({ children }: { children: string }) {
@@ -50,6 +58,17 @@ export default function SettingsScreen() {
     () => getSettings().backupExercise,
   );
   const [lockIn, setLockIn] = useState(() => getSettings().lockInMinutes);
+  // Re-read on focus: the user may have just changed it in system settings.
+  const [readiness, setReadiness] = useState<AlarmReadiness | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!isRingingModuleAvailable()) return;
+      getAlarmReadiness()
+        .then(setReadiness)
+        .catch(() => undefined);
+    }, []),
+  );
+  const devBuildOnly = 'Requires a dev build — check after prebuild.';
 
   const health: HealthRow[] = [
     {
@@ -58,23 +77,42 @@ export default function SettingsScreen() {
       detail: 'Needed for rep verification.',
     },
     {
+      label: 'Notifications',
+      ok: readiness?.notifications ?? null,
+      detail: readiness
+        ? readiness.notifications
+          ? 'Allowed.'
+          : 'Off — the alarm screen can’t open. Turn on in app settings.'
+        : devBuildOnly,
+    },
+    {
+      label: 'Full-screen alarms',
+      ok: readiness?.fullScreen ?? null,
+      detail: readiness
+        ? readiness.fullScreen
+          ? 'Allowed — the workout opens over the lock screen.'
+          : 'Off — tap to allow, or the workout won’t open over the lock screen.'
+        : devBuildOnly,
+      onFix:
+        readiness && !readiness.fullScreen
+          ? () => {
+              openFullScreenIntentSettings().catch(() => undefined);
+            }
+          : undefined,
+    },
+    {
       label: 'Exact alarms',
-      ok: isAlarmModuleAvailable() ? true : null,
-      detail: isAlarmModuleAvailable()
-        ? 'AlarmModule linked.'
-        : 'Requires a dev build — check after prebuild.',
+      ok: readiness?.exactAlarms ?? null,
+      detail: readiness
+        ? readiness.exactAlarms
+          ? 'Allowed — alarms fire on time.'
+          : 'Off — alarms may fire late.'
+        : devBuildOnly,
     },
     {
       label: 'Lock-task mode',
       ok: isLockdownModuleAvailable() ? true : null,
-      detail: isLockdownModuleAvailable()
-        ? 'LockdownModule linked.'
-        : 'Requires a dev build — check after prebuild.',
-    },
-    {
-      label: 'Battery optimisation exemption',
-      ok: null,
-      detail: 'Request on first alarm save in a dev build.',
+      detail: isLockdownModuleAvailable() ? 'LockdownModule linked.' : devBuildOnly,
     },
   ];
 
@@ -94,8 +132,11 @@ export default function SettingsScreen() {
 
         <SectionTitle>Permissions health</SectionTitle>
         {health.map((row) => (
-          <View
+          <Pressable
             key={row.label}
+            disabled={!row.onFix}
+            onPress={row.onFix}
+            accessibilityRole={row.onFix ? 'button' : undefined}
             style={[
               styles.card,
               { backgroundColor: t.bgSurface, borderColor: t.border },
@@ -122,7 +163,7 @@ export default function SettingsScreen() {
                 {row.detail}
               </Text>
             </View>
-          </View>
+          </Pressable>
         ))}
 
         <SectionTitle>Strictness level</SectionTitle>

@@ -14,6 +14,7 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.pose.Pose
@@ -41,8 +42,8 @@ import kotlin.math.sqrt
  * Keeps the screen on while detection runs: a propped-up phone must not
  * time out mid-set.
  *
- * Thresholds mirror EXERCISE_COUNTER_CONFIGS in src/workout/repCounter.ts —
- * keep the two in sync; the TS copy exists for tests and the demo fallback.
+ * Thresholds arrive from JS (EXERCISE_COUNTER_CONFIGS in
+ * src/workout/repCounter.ts) with each start — one source of truth.
  */
 @ExperimentalGetImage
 class PoseModule(reactContext: ReactApplicationContext) :
@@ -58,6 +59,12 @@ class PoseModule(reactContext: ReactApplicationContext) :
   private var repTarget: Int = 20
   private var total: Int = 0
 
+  // Counter thresholds for the active exercise (from EXERCISE_COUNTER_CONFIGS).
+  private var downAt = 100.0
+  private var upAt = 160.0
+  private var minRepMs = 600L
+  private var maxRepMs = 6000L
+
   // Rep state machine (mirrors the TS RepCounter).
   private var phase: Int = PHASE_UP
   private var cycleStartMs: Long = 0L
@@ -69,10 +76,14 @@ class PoseModule(reactContext: ReactApplicationContext) :
   private var pendingSinceMs: Long = 0L
 
   @ReactMethod
-  fun startPoseDetection(exercise: String, repTarget: Double, promise: Promise) {
+  fun startPoseDetection(exercise: String, repTarget: Double, config: ReadableMap, promise: Promise) {
     try {
       this.exercise = exercise
       this.repTarget = repTarget.toInt()
+      downAt = config.getDouble("downThresholdDeg")
+      upAt = config.getDouble("upThresholdDeg")
+      minRepMs = config.getDouble("minRepMs").toLong()
+      maxRepMs = config.getDouble("maxRepMs").toLong()
       this.total = 0
       resetCycle()
       framing = FRAMING_NONE
@@ -263,24 +274,13 @@ class PoseModule(reactContext: ReactApplicationContext) :
     return Math.toDegrees(acos((dot / mag).coerceIn(-1.0, 1.0)))
   }
 
-  /** Thresholds mirror EXERCISE_COUNTER_CONFIGS (TS). Keep in sync. */
-  private fun thresholds(): Triple<Double, Double, Pair<Long, Long>> = when (exercise) {
-    "pushups" -> Triple(100.0, 160.0, 500L to 6000L)
-    "jumping_jacks" -> Triple(40.0, 140.0, 400L to 4000L)
-    "situps" -> Triple(70.0, 150.0, 700L to 8000L)
-    else -> Triple(100.0, 160.0, 600L to 6000L) // squats
-  }
-
   private fun resetCycle() {
     phase = PHASE_UP
     cycleStartMs = 0L
   }
 
   private fun feedAngle(angle: Double, now: Long) {
-    val (downAt, upAt, tempo) = thresholds()
-    val (minMs, maxMs) = tempo
-
-    if (phase != PHASE_UP && cycleStartMs > 0 && now - cycleStartMs > maxMs) {
+    if (phase != PHASE_UP && cycleStartMs > 0 && now - cycleStartMs > maxRepMs) {
       // Stale cycle: abandon, discard this sample (mirrors TS).
       resetCycle()
       return
@@ -311,7 +311,7 @@ class PoseModule(reactContext: ReactApplicationContext) :
           angle >= upAt -> {
             val elapsed = now - cycleStartMs
             resetCycle()
-            if (elapsed in minMs..maxMs) {
+            if (elapsed in minRepMs..maxRepMs) {
               total += 1
               emit("onRepCounted", Arguments.createMap().apply {
                 putInt("reps", 1)

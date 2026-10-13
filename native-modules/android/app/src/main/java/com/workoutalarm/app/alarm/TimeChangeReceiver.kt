@@ -1,16 +1,16 @@
 package com.workoutalarm.app.alarm
 
-import android.app.AlarmManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.workoutalarm.app.ringing.RingingService
 
 /**
  * TIME_SET / TIMEZONE_CHANGED: the user (or network) changed the clock.
- * Jumping the clock forward must not mark the alarm done — re-arm from the
- * persisted schedule. If the stored trigger is now in the past, AlarmManager
- * fires it immediately, which resumes ringing: the workout is still owed.
+ * Jumping the clock forward must not mark an alarm done — re-arm every
+ * persisted alarm. One whose trigger is now in the past fires immediately,
+ * which resumes ringing: the workout is still owed. Released alarms are
+ * no longer in AlarmStore, so a clock change never re-rings them.
  *
  * Milestone 1 note: re-arms against the stored wall-clock trigger. Full
  * elapsed-realtime tracking (RTC vs wall clock reconciliation) is a
@@ -24,22 +24,10 @@ class TimeChangeReceiver : BroadcastReceiver() {
     ) {
       return
     }
-    val scheduled = AlarmModule.readSchedule(context) ?: return
-    val fireIntent = Intent(context, AlarmReceiver::class.java).apply {
-      putExtra(AlarmReceiver.EXTRA_ALARM_ID, scheduled.alarmId)
-      putExtra(AlarmReceiver.EXTRA_EXERCISE, scheduled.exercise)
-      putExtra(AlarmReceiver.EXTRA_REP_TARGET, scheduled.repTarget)
-    }
-    val pendingIntent = PendingIntent.getBroadcast(
-      context,
-      scheduled.alarmId.hashCode(),
-      fireIntent,
-      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-    alarmManager.setAlarmClock(
-      AlarmManager.AlarmClockInfo(scheduled.triggerAt, null),
-      pendingIntent
-    )
+    val ringingId = RingingService.currentRinging?.alarmId
+    AlarmStore.readAll(context)
+      // Already ringing: re-firing would only restart the same alarm.
+      .filter { it.alarmId != ringingId }
+      .forEach { AlarmStore.rearm(context, it) }
   }
 }

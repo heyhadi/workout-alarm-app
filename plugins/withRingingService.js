@@ -26,6 +26,14 @@ const KOTLIN_FILES = [
 
 const RINGING_ACTION = 'com.workoutalarm.app.RINGING';
 
+// The live React context in both architectures. `reactInstanceManager` is
+// the old-architecture accessor: on RN 0.86 (bridgeless) it never yields
+// the running context, so the event was silently dropped and an alarm that
+// fired with the app open never reached /ringing.
+const REACT_CONTEXT_EXPR =
+  '(application as com.facebook.react.ReactApplication).reactHost?.currentReactContext';
+const LEGACY_REACT_CONTEXT_EXPR = 'reactInstanceManager.currentReactContext';
+
 const withRingingService = (config) => {
   config = withAndroidManifest(config, (config) => {
     addUsesPermissions(config.modResults, [
@@ -57,7 +65,12 @@ const withRingingService = (config) => {
       return config;
     }
     if (contents.includes(RINGING_ACTION)) {
-      return config; // already applied
+      // Already applied — only upgrade output from an earlier plugin version.
+      config.modResults.contents = contents.replace(
+        LEGACY_REACT_CONTEXT_EXPR,
+        REACT_CONTEXT_EXPR,
+      );
+      return config;
     }
     config.modResults.contents = contents.replace(
       /super\.onCreate\([^)]*\)/,
@@ -91,7 +104,9 @@ const withRingingService = (config) => {
           '      // Workout Alarm: app was already alive — push the event to JS\n' +
           '      // so the router can jump to /ringing without an AppState change.\n' +
           '      try {\n' +
-          '        reactInstanceManager.currentReactContext\n' +
+          '        ' +
+          REACT_CONTEXT_EXPR +
+          '\n' +
           '          ?.getJSModule(com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)\n' +
           '          ?.emit("onRingingIntent", null)\n' +
           '      } catch (_: Exception) { }\n' +

@@ -4,7 +4,7 @@
  * Kotlin: android/.../alarm/AlarmModule.kt (+ AlarmReceiver.kt).
  * Emits `onAlarmFired` when the alarm fires, even if the JS runtime is dead.
  */
-import type { AlarmFiredPayload, ExerciseType } from '../types';
+import type { Alarm, AlarmFiredPayload, ExerciseType } from '../types';
 import { nextFireTimeMs } from '../workout/scheduling';
 import {
   getModuleEventEmitter,
@@ -54,6 +54,42 @@ export async function scheduleAlarm(input: ScheduleAlarmInput): Promise<void> {
 /** Cancel a scheduled alarm. No-op if it was never scheduled. */
 export async function cancelAlarm(alarmId: string): Promise<void> {
   await spec().cancelAlarm(alarmId);
+}
+
+/**
+ * Make the native schedule match an alarm's saved state: enabled alarms are
+ * armed for their next occurrence, disabled ones cancelled. Call after every
+ * create, edit, toggle and release. No-op without the native module.
+ */
+export async function applyAlarmSchedule(alarm: Alarm): Promise<void> {
+  if (!isAlarmModuleAvailable()) return;
+  if (alarm.enabled) {
+    await scheduleAlarm({
+      alarmId: alarm.id,
+      time: alarm.time,
+      days: alarm.days,
+      exercise: alarm.exercise,
+      repTarget: alarm.repTarget,
+    });
+  } else {
+    await cancelAlarm(alarm.id);
+  }
+}
+
+/**
+ * Re-arm every saved alarm on launch, so the native schedule always matches
+ * the database (e.g. alarms saved before the per-alarm store existed).
+ * Skips the alarm that is ringing right now: re-arming it for tomorrow
+ * would forgive the workout still owed.
+ */
+export async function syncAlarmSchedules(
+  alarms: Alarm[],
+  ringingAlarmId: string | null,
+): Promise<void> {
+  for (const alarm of alarms) {
+    if (alarm.id === ringingAlarmId) continue;
+    await applyAlarmSchedule(alarm);
+  }
 }
 
 /**

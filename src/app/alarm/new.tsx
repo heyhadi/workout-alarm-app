@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router';
 import { Screen } from '../../components/Screen';
 import { AlarmForm, type AlarmFormValue } from '../../components/AlarmForm';
 import { upsertAlarm } from '../../storage/db';
-import { getSettings } from '../../storage/settings';
-import { isAlarmModuleAvailable, scheduleAlarm } from '../../native/alarms';
+import { applyAlarmSchedule } from '../../native/alarms';
+import { ensureAlarmPermissions } from '../../native/alarmPermissions';
 
 const DEFAULTS: AlarmFormValue = {
   time: '06:30',
@@ -30,21 +30,9 @@ export default function NewAlarmScreen() {
       updatedAt: now,
     };
     await upsertAlarm(alarm);
-    try {
-      if (isAlarmModuleAvailable()) {
-        const settings = getSettings();
-        await scheduleAlarm({
-          alarmId: alarm.id,
-          time: alarm.time,
-          days: alarm.days,
-          exercise: alarm.exercise,
-          repTarget: alarm.repTarget,
-        });
-        void settings;
-      }
-    } catch {
-      // Expo Go / web: DB-only until a dev build links the native module.
-    }
+    // Expo Go / web: DB-only until a dev build links the native module.
+    await applyAlarmSchedule(alarm).catch(() => undefined);
+    await ensureAlarmPermissions();
     router.back();
   };
 

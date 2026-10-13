@@ -33,11 +33,24 @@ interface RingingModuleSpec {
     exercise: ExerciseType;
     repTarget: number;
   } | null>;
+  getAlarmReadiness(): Promise<AlarmReadiness>;
+  openFullScreenIntentSettings(): Promise<void>;
   getActiveRinging(): Promise<{
     alarmId: string;
     exercise: ExerciseType;
     repTarget: number;
   } | null>;
+}
+
+/**
+ * What the phone lets the alarm do. Any false means it can ring without
+ * ever showing the workout screen (or miss its time).
+ */
+export interface AlarmReadiness {
+  notifications: boolean;
+  /** Android 14+: allowed to open full-screen over the lock screen. */
+  fullScreen: boolean;
+  exactAlarms: boolean;
 }
 
 export interface StartRingingInput {
@@ -95,6 +108,15 @@ export async function getActiveRinging(): Promise<{
   repTarget: number;
 } | null> {
   return spec().getActiveRinging();
+}
+
+export async function getAlarmReadiness(): Promise<AlarmReadiness> {
+  return spec().getAlarmReadiness();
+}
+
+/** Open the system page for "full-screen notifications" (Android 14+). */
+export async function openFullScreenIntentSettings(): Promise<void> {
+  await spec().openFullScreenIntentSettings();
 }
 
 /** Subscribe to `onAlarmReleased` (authoritative release payload). */
