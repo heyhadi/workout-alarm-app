@@ -18,6 +18,7 @@ class AlarmReceiver : BroadcastReceiver() {
       putExtra(EXTRA_ALARM_ID, alarmId)
       putExtra(EXTRA_EXERCISE, intent.getStringExtra(EXTRA_EXERCISE) ?: "squats")
       putExtra(EXTRA_REP_TARGET, intent.getIntExtra(EXTRA_REP_TARGET, 20))
+      putExtra(EXTRA_SOUND_URI, intent.getStringExtra(EXTRA_SOUND_URI))
     }
     // Foreground-service start: allowed from a receiver for alarm clocks.
     ContextCompat.startForegroundService(context, serviceIntent)
@@ -27,5 +28,6 @@ class AlarmReceiver : BroadcastReceiver() {
     const val EXTRA_ALARM_ID = "com.workoutalarm.app.ALARM_ID"
     const val EXTRA_EXERCISE = "com.workoutalarm.app.EXERCISE"
     const val EXTRA_REP_TARGET = "com.workoutalarm.app.REP_TARGET"
+    const val EXTRA_SOUND_URI = "com.workoutalarm.app.SOUND_URI"
   }
 }

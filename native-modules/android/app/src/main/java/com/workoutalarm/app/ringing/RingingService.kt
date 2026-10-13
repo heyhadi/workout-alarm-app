@@ -10,6 +10,7 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -36,6 +37,8 @@ class RingingService : Service() {
   private var vibrator: Vibrator? = null
   private val watchdog = Handler(Looper.getMainLooper())
   private var alarmVolume = -1
+  // Chosen sound for the current alarm; null = the phone's default alarm.
+  private var soundUri: Uri? = null
 
   private val watchdogTask = object : Runnable {
     override fun run() {
@@ -66,6 +69,7 @@ class RingingService : Service() {
     val exercise = intent?.getStringExtra(AlarmReceiver.EXTRA_EXERCISE) ?: "squats"
     val repTarget = intent?.getIntExtra(AlarmReceiver.EXTRA_REP_TARGET, 20) ?: 20
 
+    soundUri = intent?.getStringExtra(AlarmReceiver.EXTRA_SOUND_URI)?.let(Uri::parse)
     currentRinging = RingingInfo(alarmId, exercise, repTarget)
     startForeground(NOTIFICATION_ID, buildNotification(alarmId, exercise, repTarget))
     startSound()
@@ -116,26 +120,42 @@ class RingingService : Service() {
   private fun startSound() {
     try {
       mediaPlayer?.release()
-      val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
       val audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
       if (alarmVolume < 0) {
         alarmVolume = audioManager.getStreamVolume(android.media.AudioManager.STREAM_ALARM)
       }
-      mediaPlayer = MediaPlayer().apply {
-        setDataSource(this@RingingService, uri)
-        setAudioAttributes(
-          AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ALARM)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-        )
-        isLooping = true
-        prepare()
-        start()
+      mediaPlayer = try {
+        createPlayer(soundUri ?: defaultAlarmUri())
+      } catch (_: Exception) {
+        // Chosen sound gone (deleted file, revoked access): never ring silent.
+        createPlayer(defaultAlarmUri())
       }
       reassertVolume()
     } catch (_: Exception) { }
+  }
+
+  private fun defaultAlarmUri(): Uri =
+    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+      ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
+  private fun createPlayer(uri: Uri): MediaPlayer {
+    val player = MediaPlayer()
+    try {
+      player.setDataSource(this, uri)
+      player.setAudioAttributes(
+        AudioAttributes.Builder()
+          .setUsage(AudioAttributes.USAGE_ALARM)
+          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+          .build()
+      )
+      player.isLooping = true
+      player.prepare()
+      player.start()
+      return player
+    } catch (e: Exception) {
+      player.release()
+      throw e
+    }
   }
 
   private fun reassertVolume() {

@@ -11,7 +11,7 @@ const DEFAULTS: AlarmFormValue = {
   exercise: 'squats',
   repTarget: 20,
   difficulty: 'standard',
-  ringtone: 'Morning energy',
+  ringtone: '',
   backupExercise: 'steps',
   lockInMinutes: 30,
 };

@@ -33,6 +33,7 @@ class BootReceiver : BroadcastReceiver() {
         putExtra(AlarmReceiver.EXTRA_ALARM_ID, scheduled.alarmId)
         putExtra(AlarmReceiver.EXTRA_EXERCISE, scheduled.exercise)
         putExtra(AlarmReceiver.EXTRA_REP_TARGET, scheduled.repTarget)
+        putExtra(AlarmReceiver.EXTRA_SOUND_URI, scheduled.soundUri)
       }
       ContextCompat.startForegroundService(context, serviceIntent)
     }

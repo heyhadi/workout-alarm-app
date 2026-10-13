@@ -20,6 +20,7 @@ interface AlarmModuleSpec {
     triggerAtMillis: number,
     exercise: ExerciseType,
     repTarget: number,
+    soundUri: string | null,
   ): Promise<void>;
   cancelAlarm(alarmId: string): Promise<void>;
 }
@@ -32,9 +33,19 @@ export interface ScheduleAlarmInput {
   days: number[];
   exercise: ExerciseType;
   repTarget: number;
+  /** Alarm sound URI; null = the phone's default alarm sound. */
+  soundUri?: string | null;
 }
 
 export { nextFireTimeMs };
+
+/**
+ * The alarm's chosen sound URI, or null for the phone default. Alarms saved
+ * before the sound picker hold free text ("Morning energy") — not a URI.
+ */
+export function soundUriOf(ringtone: string): string | null {
+  return ringtone.includes('://') ? ringtone : null;
+}
 
 function spec(): AlarmModuleSpec {
   return getNativeModule<AlarmModuleSpec>(MODULE_NAME);
@@ -48,6 +59,7 @@ export async function scheduleAlarm(input: ScheduleAlarmInput): Promise<void> {
     triggerAtMillis,
     input.exercise,
     input.repTarget,
+    input.soundUri ?? null,
   );
 }
 
@@ -70,6 +82,7 @@ export async function applyAlarmSchedule(alarm: Alarm): Promise<void> {
       days: alarm.days,
       exercise: alarm.exercise,
       repTarget: alarm.repTarget,
+      soundUri: soundUriOf(alarm.ringtone),
     });
   } else {
     await cancelAlarm(alarm.id);

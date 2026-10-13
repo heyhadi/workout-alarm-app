@@ -34,6 +34,8 @@ interface RingingModuleSpec {
     repTarget: number;
   } | null>;
   getAlarmReadiness(): Promise<AlarmReadiness>;
+  pickAlarmSound(currentUri: string | null): Promise<PickedSound | null>;
+  getSoundTitle(uri: string | null): Promise<string>;
   openFullScreenIntentSettings(): Promise<void>;
   getActiveRinging(): Promise<{
     alarmId: string;
@@ -51,6 +53,12 @@ export interface AlarmReadiness {
   /** Android 14+: allowed to open full-screen over the lock screen. */
   fullScreen: boolean;
   exactAlarms: boolean;
+}
+
+export interface PickedSound {
+  /** Null when "Default" was picked: follow the phone's alarm sound. */
+  uri: string | null;
+  title: string;
 }
 
 export interface StartRingingInput {
@@ -117,6 +125,21 @@ export async function getAlarmReadiness(): Promise<AlarmReadiness> {
 /** Open the system page for "full-screen notifications" (Android 14+). */
 export async function openFullScreenIntentSettings(): Promise<void> {
   await spec().openFullScreenIntentSettings();
+}
+
+/**
+ * Android's alarm-sound picker. Resolves the pick, or null if the user
+ * backed out (keep the current sound). Silent is never offered.
+ */
+export async function pickAlarmSound(
+  currentUri: string | null,
+): Promise<PickedSound | null> {
+  return spec().pickAlarmSound(currentUri);
+}
+
+/** Display name for a sound URI ("Phone default" for null). */
+export async function getSoundTitle(uri: string | null): Promise<string> {
+  return spec().getSoundTitle(uri);
 }
 
 /** Subscribe to `onAlarmReleased` (authoritative release payload). */

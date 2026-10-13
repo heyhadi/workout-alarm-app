@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { Difficulty, ExerciseType } from '../types';
@@ -7,6 +7,7 @@ import { STEPS_PER_REP } from '../native/steps';
 import { ExerciseChip, EXERCISE_LABELS } from './ExerciseChip';
 import { PrimaryButton } from './PrimaryButton';
 import { TimeWheel } from './TimeWheel';
+import { SoundPicker } from './SoundPicker';
 import { formatTimeUntil, nextFireTimeMs } from '../workout/scheduling';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -36,7 +37,7 @@ interface AlarmFormProps {
 /**
  * Screen 2 — Create / edit alarm form.
  * Time (inline wheel + live "rings in" countdown), repeat days, exercise picker (chips), rep presets, difficulty,
- * ringtone, backup exercise, lock-in timing. No free-text reps to regret
+ * alarm sound, backup, lock-in timing. No free-text reps to regret
  * at 6 a.m. — presets only, matching the mockup.
  */
 export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
@@ -214,22 +215,11 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       </View>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        Ringtone
+        Sound
       </Text>
-      <TextInput
+      <SoundPicker
         value={value.ringtone}
-        onChangeText={(text) => set('ringtone', text)}
-        placeholder="Morning energy"
-        placeholderTextColor={t.textSecondary}
-        style={[
-          styles.input,
-          {
-            backgroundColor: t.bgSurface,
-            borderColor: t.border,
-            color: t.textPrimary,
-          },
-          typeScale.body,
-        ]}
+        onChange={(ringtone) => set('ringtone', ringtone)}
       />
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
@@ -288,13 +278,6 @@ const styles = StyleSheet.create({
   section: { marginTop: space.lg, marginBottom: space.sm },
   ringsIn: { marginTop: space.sm, marginBottom: space.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap' },
-  input: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    marginTop: space.xs,
-  },
   dayDot: {
     width: 44,
     height: 44,

@@ -13,7 +13,7 @@ import com.facebook.react.bridge.ReactMethod
  * mirrored to AlarmStore so BootReceiver/TimeChangeReceiver can re-arm
  * them all without the JS runtime.
  *
- * Bridge: scheduleAlarm(alarmId, triggerAtMillis, exercise, repTarget),
+ * Bridge: scheduleAlarm(alarmId, triggerAtMillis, exercise, repTarget, soundUri),
  * cancelAlarm(alarmId). Emits nothing — AlarmReceiver starts the ringing.
  */
 class AlarmModule(reactContext: ReactApplicationContext) :
@@ -34,12 +34,13 @@ class AlarmModule(reactContext: ReactApplicationContext) :
     triggerAtMillis: Double,
     exercise: String,
     repTarget: Double,
+    soundUri: String?,
     promise: Promise
   ) {
     try {
       AlarmStore.arm(
         reactApplicationContext,
-        ScheduledAlarm(alarmId, triggerAtMillis.toLong(), exercise, repTarget.toInt())
+        ScheduledAlarm(alarmId, triggerAtMillis.toLong(), exercise, repTarget.toInt(), soundUri)
       )
       promise.resolve(null)
     } catch (e: Exception) {

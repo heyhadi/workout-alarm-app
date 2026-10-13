@@ -76,6 +76,7 @@ object AlarmStore {
       intent.putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarm.alarmId)
       intent.putExtra(AlarmReceiver.EXTRA_EXERCISE, alarm.exercise)
       intent.putExtra(AlarmReceiver.EXTRA_REP_TARGET, alarm.repTarget)
+      intent.putExtra(AlarmReceiver.EXTRA_SOUND_URI, alarm.soundUri)
     }
     return PendingIntent.getBroadcast(
       context,
@@ -107,6 +108,7 @@ object AlarmStore {
     .put("triggerAt", alarm.triggerAt)
     .put("exercise", alarm.exercise)
     .put("repTarget", alarm.repTarget)
+    .put("soundUri", alarm.soundUri ?: JSONObject.NULL)
     .toString()
 
   private fun fromJson(alarmId: String, json: String): ScheduledAlarm {
@@ -115,7 +117,8 @@ object AlarmStore {
       alarmId = alarmId,
       triggerAt = o.getLong("triggerAt"),
       exercise = o.optString("exercise", "squats"),
-      repTarget = o.optInt("repTarget", 20)
+      repTarget = o.optInt("repTarget", 20),
+      soundUri = if (o.isNull("soundUri")) null else o.optString("soundUri")
     )
   }
 
@@ -130,5 +133,7 @@ data class ScheduledAlarm(
   val alarmId: String,
   val triggerAt: Long,
   val exercise: String,
-  val repTarget: Int
+  val repTarget: Int,
+  /** Chosen alarm sound (content URI); null = the phone's default alarm. */
+  val soundUri: String? = null
 )
