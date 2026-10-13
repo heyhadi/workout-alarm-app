@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { AlarmCard } from '../components/AlarmCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
+import { UpdateCard } from '../components/UpdateCard';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
 import { formatTimeUntil } from '../workout/scheduling';
@@ -126,6 +127,8 @@ export default function AlarmListScreen() {
           </Pressable>
         ))}
       </View>
+
+      <UpdateCard />
 
       {nextFire !== undefined && (
         <Text

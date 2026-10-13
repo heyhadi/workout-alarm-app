@@ -8,6 +8,7 @@ import com.workoutalarm.app.alarm.AlarmModule
 import com.workoutalarm.app.lockdown.LockdownModule
 import com.workoutalarm.app.ringing.RingingModule
 import com.workoutalarm.app.steps.StepModule
+import com.workoutalarm.app.update.UpdateModule
 
 /**
  * Registers every Workout Alarm native module. Added to MainActivity's
@@ -21,7 +22,8 @@ class WorkoutAlarmPackage : ReactPackage {
       RingingModule(reactContext),
       LockdownModule(reactContext),
       PoseModule(reactContext),
-      StepModule(reactContext)
+      StepModule(reactContext),
+      UpdateModule(reactContext)
     )
 
   override fun createViewManagers(

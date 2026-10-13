@@ -4,7 +4,7 @@
  * - Copies PoseModule.kt, StepModule.kt + WorkoutAlarmPackage.kt into android/.
  * - Gradle: CameraX + ML Kit Pose Detection dependencies.
  * - MainApplication: registers WorkoutAlarmPackage so the native
- *   modules (Alarm, Ringing, Lockdown, Pose, Step) resolve from JS.
+ *   modules (Alarm, Ringing, Lockdown, Pose, Step, Update) resolve from JS.
  *
  * Kept as an explicit registration (not autolinking magic) so the wiring
  * is visible and auditable in one place.
@@ -90,7 +90,7 @@ const withWorkoutAlarmPackage = (config) => {
     } else if (!contents.includes('WorkoutAlarmPackage()')) {
       contents = contents.replace(
         anchor,
-        `${anchor}\n          // Workout Alarm native modules (Alarm, Ringing, Lockdown, Pose).\n` +
+        `${anchor}\n          // Workout Alarm native modules (Alarm, Ringing, Lockdown, Pose, Step, Update).\n` +
           '          add(WorkoutAlarmPackage())',
       );
     }

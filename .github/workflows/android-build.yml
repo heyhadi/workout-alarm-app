@@ -2,6 +2,9 @@ name: Android APK
 
 # Builds a signed release APK straight from the repo — no EAS quota involved.
 # Runs on every push to main that touches app code, and manually.
+# Each build is stamped with the run number (android versionCode) and
+# published as GitHub release `build-<N>`; the app's in-app updater
+# offers it to installed builds with a lower number.
 on:
   push:
     branches: [main]
@@ -19,6 +22,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the build-<N> release
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,6 +42,18 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
+
+      - name: Stamp build number
+        # versionCode = run number, so every build is newer than the last.
+        run: |
+          node -e '
+            const fs = require("fs");
+            const config = JSON.parse(fs.readFileSync("app.json", "utf8"));
+            config.expo.android.versionCode = Number(process.env.BUILD_NUMBER);
+            fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n");
+          '
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
 
       - name: Decode release keystore
         run: |
@@ -65,3 +82,20 @@ jobs:
           name: workout-alarm-release
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
+
+      - name: Publish release
+        # Only from main: the in-app updater installs whatever is "latest".
+        if: github.ref == 'refs/heads/main'
+        run: |
+          APK="workout-alarm-build-${BUILD_NUMBER}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$APK"
+          gh release create "build-${BUILD_NUMBER}" "$APK" \
+            --title "Build ${BUILD_NUMBER}" \
+            --notes "$COMMIT_MESSAGE" \
+            --target "$GITHUB_SHA" \
+            --latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          # Passed as data, never interpolated into the script.
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message || 'Manual build' }}
