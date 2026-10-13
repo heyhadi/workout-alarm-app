@@ -7,6 +7,7 @@ import com.facebook.react.uimanager.ViewManager
 import com.workoutalarm.app.alarm.AlarmModule
 import com.workoutalarm.app.lockdown.LockdownModule
 import com.workoutalarm.app.ringing.RingingModule
+import com.workoutalarm.app.steps.StepModule
 
 /**
  * Registers every Workout Alarm native module. Added to MainActivity's
@@ -19,7 +20,8 @@ class WorkoutAlarmPackage : ReactPackage {
       AlarmModule(reactContext),
       RingingModule(reactContext),
       LockdownModule(reactContext),
-      PoseModule(reactContext)
+      PoseModule(reactContext),
+      StepModule(reactContext)
     )
 
   override fun createViewManagers(

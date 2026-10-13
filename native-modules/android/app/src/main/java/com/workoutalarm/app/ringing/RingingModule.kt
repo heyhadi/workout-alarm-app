@@ -31,6 +31,13 @@ class RingingModule(reactContext: ReactApplicationContext) :
 
   override fun getName() = "RingingModule"
 
+  // Required by NativeEventEmitter; events go through RCTDeviceEventEmitter.
+  @ReactMethod
+  fun addListener(eventName: String) = Unit
+
+  @ReactMethod
+  fun removeListeners(count: Double) = Unit
+
   @ReactMethod
   fun startRinging(alarmId: String, exercise: String, repTarget: Double, promise: Promise) {
     try {

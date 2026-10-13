@@ -21,6 +21,12 @@ export async function ensureAlarmPermissions(): Promise<void> {
     ).catch(() => undefined);
   }
   await Camera.requestCameraPermissionsAsync().catch(() => undefined);
+  // Android 10+: the step-counter backup for when the camera can't count.
+  if (Platform.Version >= 29) {
+    await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION,
+    ).catch(() => undefined);
+  }
 
   if (!isRingingModuleAvailable()) return;
   const readiness = await getAlarmReadiness().catch(() => null);

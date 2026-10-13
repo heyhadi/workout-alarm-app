@@ -1,10 +1,10 @@
 /**
  * withWorkoutAlarmPackage — pose detection bridge + module registration.
  *
- * - Copies PoseModule.kt + WorkoutAlarmPackage.kt into android/.
+ * - Copies PoseModule.kt, StepModule.kt + WorkoutAlarmPackage.kt into android/.
  * - Gradle: CameraX + ML Kit Pose Detection dependencies.
- * - MainApplication: registers WorkoutAlarmPackage so the four native
- *   modules (Alarm, Ringing, Lockdown, Pose) resolve from JS.
+ * - MainApplication: registers WorkoutAlarmPackage so the native
+ *   modules (Alarm, Ringing, Lockdown, Pose, Step) resolve from JS.
  *
  * Kept as an explicit registration (not autolinking magic) so the wiring
  * is visible and auditable in one place.
@@ -20,6 +20,7 @@ const KOTLIN_FILES = [
   'com/workoutalarm/app/pose/PoseModule.kt',
   'com/workoutalarm/app/pose/PoseCameraViewManager.kt',
   'com/workoutalarm/app/pose/WorkoutAlarmPackage.kt',
+  'com/workoutalarm/app/steps/StepModule.kt',
 ];
 
 const GRADLE_DEPS = [

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 import { getSemanticTokens, type Mode } from '../../theme/helpers';
 import { space } from '../../theme/tokens';
 
@@ -9,16 +9,25 @@ interface ScreenProps {
   children: ReactNode;
   /** Disable the default horizontal padding (e.g. full-bleed camera). */
   noPadding?: boolean;
+  /**
+   * Safe-area edges to inset. Full-bleed screens (the workout camera) pass
+   * fewer and offset their own overlays instead.
+   */
+  edges?: Edge[];
 }
 
+const ALL_EDGES: Edge[] = ['top', 'bottom', 'left', 'right'];
+
 /** App screen shell: safe area + mode background + standard padding. */
-export function Screen({ mode = 'day', children, noPadding = false }: ScreenProps) {
+export function Screen({
+  mode = 'day',
+  children,
+  noPadding = false,
+  edges = ALL_EDGES,
+}: ScreenProps) {
   const t = getSemanticTokens(mode);
   return (
-    <SafeAreaView
-      style={[styles.safe, { backgroundColor: t.bgScreen }]}
-      edges={['top', 'bottom', 'left', 'right']}
-    >
+    <SafeAreaView style={[styles.safe, { backgroundColor: t.bgScreen }]} edges={edges}>
       <View
         style={[
           styles.body,

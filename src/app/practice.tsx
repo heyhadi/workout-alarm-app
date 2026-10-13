@@ -1,108 +1,117 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { Screen } from '../components/Screen';
-import { PrimaryButton } from '../components/PrimaryButton';
-import { getSemanticTokens } from '../../theme/helpers';
+import { WorkoutView } from '../components/WorkoutView';
+import { EXERCISE_LABELS } from '../components/ExerciseChip';
+import { useWorkoutCounter } from '../hooks/useWorkoutCounter';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
+import type { ExerciseType } from '../types';
+
+const PRACTICE_REPS = 10;
+const EXERCISES: ExerciseType[] = ['squats', 'pushups', 'jumping_jacks', 'situps'];
 
 /**
- * Screen 3 — Practice mode (day mode UI, camera on).
- * Camera framing guide, form feedback, test rep counting — deliberately
- * NO lockdown, so the first real morning is not a learning curve.
+ * Screen 3 — Practice mode. The real workout screen and the real counter —
+ * same camera, framing and thresholds as the alarm — with no lockdown and
+ * no alarm, so the first real morning is not a learning curve. Pick an
+ * exercise and count 10 reps; switching exercise starts a fresh count.
  */
 export default function PracticeScreen() {
-  const t = getSemanticTokens('day');
-  const [permission, requestPermission] = useCameraPermissions();
+  const [exercise, setExercise] = useState<ExerciseType>('squats');
+  // A new key per pick remounts the counter: fresh count, fresh camera start.
+  const [round, setRound] = useState(0);
 
-  if (!permission) {
-    return (
-      <Screen>
-        <Text style={[typeScale.body, { color: t.textSecondary }]}>
-          Checking camera permission…
-        </Text>
-      </Screen>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <Screen>
-        <Text style={[typeScale.heading, { color: t.textPrimary }]}>
-          Camera access needed
-        </Text>
-        <Text
-          style={[typeScale.body, { color: t.textSecondary, marginVertical: space.md }]}
-        >
-          Practice mode shows you how to frame your body so the rep counter can see you.
-          Nothing is recorded — frames are analysed on-device.
-        </Text>
-        <PrimaryButton label="Allow camera" onPress={requestPermission} />
-      </Screen>
-    );
-  }
+  const pick = (next: ExerciseType) => {
+    setExercise(next);
+    setRound((r) => r + 1);
+  };
 
   return (
-    <Screen noPadding>
-      <View style={styles.container}>
-        <CameraView style={styles.camera} facing="front">
-          {/* Framing guide: get your full body inside the dashed frame. */}
-          <View style={styles.guide}>
-            <View style={[styles.frame, { borderColor: primitives.energy[500] }]} />
-            <Text style={[typeScale.body, styles.hint, { color: '#fff' }]}>
-              Full body in frame
-            </Text>
-          </View>
-          {/* Skeleton overlay + live form feedback arrive with the
-              PoseModule dev build; the layout reserves the space. */}
-          <View
-            style={[styles.feedback, { backgroundColor: 'rgba(10, 22, 46, 0.72)' }]}
-          >
-            <Text style={[typeScale.body, { color: '#fff' }]}>
-              Skeleton overlay and form cues appear here in a dev build.
-            </Text>
-          </View>
-        </CameraView>
-        <View style={[styles.footer, { backgroundColor: t.bgScreen }]}>
-          <Text style={[typeScale.body, { color: t.textSecondary }]}>
-            Practice has no lockdown — experiment freely. When the PoseModule is linked,
-            this screen counts test reps with the same rules as the real alarm.
-          </Text>
-        </View>
-      </View>
+    <Screen mode="alarm" noPadding edges={['left', 'right']}>
+      <PracticeRound
+        key={`${exercise}-${round}`}
+        exercise={exercise}
+        onPick={pick}
+        onAgain={() => setRound((r) => r + 1)}
+      />
     </Screen>
   );
 }
 
+function PracticeRound({
+  exercise,
+  onPick,
+  onAgain,
+}: {
+  exercise: ExerciseType;
+  onPick: (e: ExerciseType) => void;
+  onAgain: () => void;
+}) {
+  const [done, setDone] = useState(false);
+  const counter = useWorkoutCounter({
+    exercise,
+    repTarget: PRACTICE_REPS,
+    active: true,
+    onComplete: () => setDone(true),
+  });
+
+  const header = (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {EXERCISES.map((e) => {
+        const active = e === exercise;
+        return (
+          <Pressable
+            key={e}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            onPress={() => onPick(e)}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: active
+                  ? primitives.energy[500]
+                  : 'rgba(10, 22, 46, 0.85)',
+              },
+            ]}
+          >
+            <Text style={[typeScale.bodySmall, { color: primitives.white }]}>
+              {EXERCISE_LABELS[e]}
+            </Text>
+          </Pressable>
+        );
+      })}
+      {done && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAgain}
+          style={[styles.chip, { backgroundColor: primitives.success[500] }]}
+        >
+          <Text style={[typeScale.bodySmall, { color: primitives.ink[950] }]}>
+            Again
+          </Text>
+        </Pressable>
+      )}
+    </ScrollView>
+  );
+
+  return (
+    <WorkoutView
+      counter={counter}
+      exercise={exercise}
+      label="Practice · no alarm"
+      header={header}
+      cueOverride={done ? `Done — ${counter.count} counted` : undefined}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  camera: { flex: 1 },
-  guide: {
-    flex: 1,
-    alignItems: 'center',
+  chip: {
+    borderRadius: radius.full,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    marginRight: space.sm,
+    minHeight: 40,
     justifyContent: 'center',
-    padding: space.xl,
   },
-  frame: {
-    width: '72%',
-    height: '62%',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: radius.lg,
-  },
-  hint: {
-    marginTop: space.sm,
-    backgroundColor: 'rgba(10, 22, 46, 0.6)',
-    paddingHorizontal: space.sm,
-    borderRadius: radius.sm,
-  },
-  feedback: {
-    position: 'absolute',
-    bottom: space.lg,
-    left: space.md,
-    right: space.md,
-    borderRadius: radius.md,
-    padding: space.md,
-    alignItems: 'center',
-  },
-  footer: { padding: space.md },
 });

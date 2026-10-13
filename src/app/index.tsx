@@ -21,7 +21,6 @@ import {
 } from '../storage/db';
 import type { Alarm } from '../types';
 
-
 /**
  * Screen 1 — Alarm list (day mode).
  * All alarms, next-alarm countdown, streak badge. Editing locks inside the
@@ -62,9 +61,14 @@ export default function AlarmListScreen() {
     setStreak(await currentStreakDays());
   }, []);
 
+  // Refresh on focus, then every 30 s so the countdown keeps moving.
   useFocusEffect(
     useCallback(() => {
       refresh().catch(() => undefined);
+      const timer = setInterval(() => {
+        refresh().catch(() => undefined);
+      }, 30_000);
+      return () => clearInterval(timer);
     }, [refresh]),
   );
 

@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import type { Difficulty, ExerciseType } from '../types';
+import { STEPS_PER_REP } from '../native/steps';
 import { ExerciseChip, EXERCISE_LABELS } from './ExerciseChip';
 import { PrimaryButton } from './PrimaryButton';
 import { TimeWheel } from './TimeWheel';
@@ -234,18 +235,9 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
         Backup if camera fails
       </Text>
-      <View style={styles.row}>
-        <ExerciseChip
-          exercise="steps"
-          selected={value.backupExercise === 'steps'}
-          onSelect={(ex) => set('backupExercise', ex)}
-        />
-        <ExerciseChip
-          exercise="jumping_jacks"
-          selected={value.backupExercise === 'jumping_jacks'}
-          onSelect={(ex) => set('backupExercise', ex)}
-        />
-      </View>
+      <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
+        {`Walk it off: ${STEPS_PER_REP} steps per rep, counted by the step sensor. Used when the camera is blocked, denied or can’t see you for 2 minutes.`}
+      </Text>
 
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
         Locks before firing

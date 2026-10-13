@@ -21,6 +21,13 @@ class AlarmModule(reactContext: ReactApplicationContext) :
 
   override fun getName() = "AlarmModule"
 
+  // Required by NativeEventEmitter; events go through RCTDeviceEventEmitter.
+  @ReactMethod
+  fun addListener(eventName: String) = Unit
+
+  @ReactMethod
+  fun removeListeners(count: Double) = Unit
+
   @ReactMethod
   fun scheduleAlarm(
     alarmId: String,

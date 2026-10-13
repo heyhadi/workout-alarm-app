@@ -51,6 +51,13 @@ class PoseModule(reactContext: ReactApplicationContext) :
 
   override fun getName() = "PoseModule"
 
+  // Required by NativeEventEmitter; events go through RCTDeviceEventEmitter.
+  @ReactMethod
+  fun addListener(eventName: String) = Unit
+
+  @ReactMethod
+  fun removeListeners(count: Double) = Unit
+
   private var detector: PoseDetector? = null
   private var cameraProvider: ProcessCameraProvider? = null
   private val cameraExecutor = Executors.newSingleThreadExecutor()

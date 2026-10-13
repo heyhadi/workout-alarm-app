@@ -7,7 +7,6 @@ import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import {
   getSettings,
-  setBackupExercise,
   setEmergencyExit,
   setLockInMinutes,
   setStrictness,
@@ -19,8 +18,8 @@ import {
   openFullScreenIntentSettings,
   type AlarmReadiness,
 } from '../native/ringing';
-import type { EmergencyExitMode, ExerciseType, StrictnessLevel } from '../types';
-import { ExerciseChip } from '../components/ExerciseChip';
+import { STEPS_PER_REP } from '../native/steps';
+import type { EmergencyExitMode, StrictnessLevel } from '../types';
 
 interface HealthRow {
   label: string;
@@ -53,9 +52,6 @@ export default function SettingsScreen() {
   );
   const [emergencyExit, setEmergencyExitState] = useState<EmergencyExitMode>(
     () => getSettings().emergencyExit,
-  );
-  const [backup, setBackup] = useState<ExerciseType>(
-    () => getSettings().backupExercise,
   );
   const [lockIn, setLockIn] = useState(() => getSettings().lockInMinutes);
   // Re-read on focus: the user may have just changed it in system settings.
@@ -229,18 +225,9 @@ export default function SettingsScreen() {
         ))}
 
         <SectionTitle>Backup if camera fails</SectionTitle>
-        <View style={styles.rowWrap}>
-          <ExerciseChip
-            exercise="steps"
-            selected={backup === 'steps'}
-            onSelect={(ex) => pick(backup, setBackup, setBackupExercise)(ex)}
-          />
-          <ExerciseChip
-            exercise="jumping_jacks"
-            selected={backup === 'jumping_jacks'}
-            onSelect={(ex) => pick(backup, setBackup, setBackupExercise)(ex)}
-          />
-        </View>
+        <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
+          {`Walk it off: ${STEPS_PER_REP} steps per rep, counted by the step sensor. Used when the camera is blocked, denied or can’t see you for 2 minutes.`}
+        </Text>
 
         <SectionTitle>Default lock-in window</SectionTitle>
         <View style={styles.rowWrap}>
