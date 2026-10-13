@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { AppState } from 'react-native';
+import { AppState, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -71,15 +72,21 @@ export default function RootLayout() {
   }
 
   return (
-    <ErrorBoundary>
-      <StatusBar style="auto" />
-      <Stack
-        screenOptions={{
-          // Screens set their own headers; the ringing screen hides it.
-          headerShown: false,
-          animation: 'slide_from_right',
-        }}
-      />
-    </ErrorBoundary>
+    <GestureHandlerRootView style={styles.root}>
+      <ErrorBoundary>
+        <StatusBar style="auto" />
+        <Stack
+          screenOptions={{
+            // Screens set their own headers; the ringing screen hides it.
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});
