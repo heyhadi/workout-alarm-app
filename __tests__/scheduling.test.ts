@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { isInLockInWindow, nextFireTimeMs } from '../src/workout/scheduling';
+import {
+  formatTimeUntil,
+  isInLockInWindow,
+  nextFireTimeMs,
+} from '../src/workout/scheduling';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -54,5 +58,28 @@ describe('isInLockInWindow', () => {
   it('is not locked 40 minutes before firing', () => {
     mockNow('2026-10-12T05:50:00');
     expect(isInLockInWindow('06:30', [1], 30)).toBe(false);
+  });
+});
+
+describe('formatTimeUntil', () => {
+  const now = new Date('2026-10-12T23:18:00').getTime();
+  const at = (mins: number) => now + mins * 60_000;
+
+  it('shows hours and minutes under a day', () => {
+    expect(formatTimeUntil(at(7 * 60 + 12), now)).toBe('7 h 12 min');
+  });
+
+  it('shows minutes only under an hour', () => {
+    expect(formatTimeUntil(at(45), now)).toBe('45 min');
+  });
+
+  it('shows days and hours for repeat alarms days away', () => {
+    expect(formatTimeUntil(at(2 * 1440 + 3 * 60 + 30), now)).toBe('2 d 3 h');
+    expect(formatTimeUntil(at(6 * 1440), now)).toBe('6 d');
+  });
+
+  it('never goes negative', () => {
+    expect(formatTimeUntil(now + 20_000, now)).toBe('under a minute');
+    expect(formatTimeUntil(now - 60_000, now)).toBe('under a minute');
   });
 });

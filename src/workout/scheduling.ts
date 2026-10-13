@@ -53,3 +53,18 @@ export function isInLockInWindow(
   const msLeft = fireMs - nowMs;
   return msLeft > 0 && msLeft <= lockInMinutes * 60_000;
 }
+
+/**
+ * Human countdown to a fire time, e.g. "7 h 12 min", "45 min",
+ * "under a minute". Shared by the alarm list and the time picker.
+ */
+export function formatTimeUntil(fireMs: number, nowMs: number): string {
+  const totalMin = Math.floor(Math.max(0, fireMs - nowMs) / 60_000);
+  if (totalMin < 1) return 'under a minute';
+  const days = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  if (days > 0) return h > 0 ? `${days} d ${h} h` : `${days} d`;
+  if (h > 0) return `${h} h ${m} min`;
+  return `${m} min`;
+}

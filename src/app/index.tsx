@@ -6,6 +6,7 @@ import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
+import { formatTimeUntil } from '../workout/scheduling';
 import {
   cancelAlarm,
   isAlarmModuleAvailable,
@@ -36,13 +37,6 @@ const SAMPLE_ALARM: Alarm = {
   updatedAt: Date.now(),
 };
 
-function formatCountdown(fireMs: number): string {
-  const diffMs = Math.max(0, fireMs - Date.now());
-  const h = Math.floor(diffMs / 3_600_000);
-  const m = Math.floor((diffMs % 3_600_000) / 60_000);
-  return `Next alarm in ${h} h ${m} min`;
-}
-
 /**
  * Screen 1 — Alarm list (day mode).
  * All alarms, next-alarm countdown, streak badge. Editing locks inside the
@@ -54,6 +48,8 @@ export default function AlarmListScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [streak, setStreak] = useState(0);
   const [nextFire, setNextFire] = useState<number | undefined>(undefined);
+  // Clock reading taken with nextFire, so render stays pure.
+  const [refreshedAt, setRefreshedAt] = useState(0);
   const [lockedById, setLockedById] = useState<Map<string, boolean>>(() => new Map());
 
   const refresh = useCallback(async () => {
@@ -80,6 +76,7 @@ export default function AlarmListScreen() {
     }
     setAlarms(rows);
     setNextFire(next);
+    setRefreshedAt(now);
     setLockedById(locked);
     setStreak(await currentStreakDays());
   }, []);
@@ -141,7 +138,7 @@ export default function AlarmListScreen() {
         <Text
           style={[typeScale.body, { color: t.textSecondary, marginBottom: space.md }]}
         >
-          {formatCountdown(nextFire)}
+          {`Next alarm in ${formatTimeUntil(nextFire, refreshedAt)}`}
         </Text>
       )}
 
