@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getSemanticTokens } from '../../theme/helpers';
-import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
+import { primitives, space, type as typeScale } from '../../theme/tokens';
 import type { Difficulty, ExerciseType } from '../types';
 import { STEPS_PER_REP } from '../native/steps';
-import { ExerciseChip } from './ExerciseChip';
+import { Block, Option, OptionRow, RowText, Section } from './Card';
 import { PrimaryButton } from './PrimaryButton';
 import { TimeWheel } from './TimeWheel';
 import { SoundPicker } from './SoundPicker';
@@ -42,10 +42,10 @@ interface AlarmFormProps {
 }
 
 /**
- * Screen 2 — Create / edit alarm form.
- * Time (inline wheel + live "rings in" countdown), repeat days, exercise picker (chips), rep presets, difficulty,
- * alarm sound, backup, lock-in timing. No free-text reps to regret
- * at 6 a.m. — presets only, matching the mockup.
+ * Screen 2 — Create / edit alarm form, as cards: time (wheel, live "rings
+ * in", presets), repeat days, workout (exercise, reps, difficulty), sound,
+ * safety (camera backup, lock window). Save is pinned at the bottom.
+ * No free-text reps to regret at 6 a.m. — presets only.
  */
 export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
   const t = getSemanticTokens('day');
@@ -79,233 +79,173 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
-      <Text style={[typeScale.caption, { color: t.textSecondary }]}>
-        {strings.form.time}
-      </Text>
-      <TimeWheel value={value.time} onChange={(time) => set('time', time)} />
-      <Text
-        style={[typeScale.label, styles.ringsIn, { color: primitives.energy[600] }]}
-        accessibilityLiveRegion="polite"
-      >
-        {strings.form.ringsIn(ringsIn)}
-      </Text>
-      <View style={styles.row}>
-        {PRESET_TIMES.map((time) => {
-          const active = value.time === time;
-          return (
-            <Pressable
-              key={time}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              onPress={() => set('time', time)}
+    <View style={styles.root}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Section title={strings.form.time}>
+          <Block first>
+            <TimeWheel value={value.time} onChange={(time) => set('time', time)} />
+            <Text
               style={[
-                styles.preset,
-                {
-                  backgroundColor: active ? primitives.energy[50] : t.bgSurface,
-                  borderColor: active ? primitives.energy[600] : t.border,
-                },
+                typeScale.label,
+                styles.ringsIn,
+                { color: primitives.energy[600] },
               ]}
+              accessibilityLiveRegion="polite"
             >
-              <Text
-                style={[
-                  typeScale.bodySmall,
-                  { color: active ? primitives.energy[600] : t.textPrimary },
-                ]}
-              >
-                {time}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+              {strings.form.ringsIn(ringsIn)}
+            </Text>
+            <OptionRow>
+              {PRESET_TIMES.map((time) => (
+                <Option
+                  key={time}
+                  fill
+                  label={time}
+                  selected={value.time === time}
+                  onPress={() => set('time', time)}
+                />
+              ))}
+            </OptionRow>
+          </Block>
+        </Section>
 
-      <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        {strings.form.repeat}
-      </Text>
-      <View style={styles.days}>
-        {strings.dayLetters.map((letter, i) => {
-          const active = value.days.includes(i);
-          return (
-            <Pressable
-              key={i}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              onPress={() => toggleDay(i)}
-              style={[
-                styles.dayDot,
-                {
-                  backgroundColor: active ? t.actionPrimary : t.bgSurface,
-                  borderColor: t.border,
-                },
-              ]}
-            >
-              <Text style={{ color: active ? t.textOnAccent : t.textPrimary }}>
-                {letter}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+        <Section title={strings.form.repeat}>
+          <Block first>
+            <View style={styles.days}>
+              {strings.dayLetters.map((letter, i) => {
+                const active = value.days.includes(i);
+                return (
+                  <Pressable
+                    key={i}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: active }}
+                    onPress={() => toggleDay(i)}
+                    style={[
+                      styles.dayDot,
+                      {
+                        backgroundColor: active ? t.actionPrimary : t.bgSurface,
+                        borderColor: active ? t.actionPrimary : t.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        typeScale.body,
+                        { color: active ? t.textOnAccent : t.textPrimary },
+                      ]}
+                    >
+                      {letter}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Block>
+        </Section>
 
-      <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        {strings.form.exercise}
-      </Text>
-      <View style={styles.row}>
-        {CAMERA_EXERCISES.map((e) => (
-          <ExerciseChip
-            key={e}
-            exercise={e}
-            selected={value.exercise === e}
-            onSelect={(ex) => set('exercise', ex)}
+        <Section title={strings.form.workout}>
+          <Block first label={strings.form.exercise}>
+            <OptionRow wrap>
+              {CAMERA_EXERCISES.map((e) => (
+                <Option
+                  key={e}
+                  label={strings.exercise[e]}
+                  selected={value.exercise === e}
+                  onPress={() => set('exercise', e)}
+                />
+              ))}
+            </OptionRow>
+          </Block>
+          <Block label={strings.form.reps}>
+            <OptionRow>
+              {REP_PRESETS.map((n) => (
+                <Option
+                  key={n}
+                  fill
+                  label={String(n)}
+                  selected={value.repTarget === n}
+                  onPress={() => set('repTarget', n)}
+                />
+              ))}
+            </OptionRow>
+          </Block>
+          <Block label={strings.form.difficulty}>
+            <OptionRow>
+              {DIFFICULTIES.map((d) => (
+                <Option
+                  key={d}
+                  fill
+                  label={strings.difficulty[d]}
+                  selected={value.difficulty === d}
+                  onPress={() => set('difficulty', d)}
+                />
+              ))}
+            </OptionRow>
+          </Block>
+        </Section>
+
+        <Section title={strings.form.sound}>
+          <SoundPicker
+            value={value.ringtone}
+            onChange={(ringtone) => set('ringtone', ringtone)}
           />
-        ))}
-      </View>
+        </Section>
 
-      <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        {strings.form.reps}
-      </Text>
-      <View style={styles.row}>
-        {REP_PRESETS.map((n) => {
-          const active = value.repTarget === n;
-          return (
-            <Pressable
-              key={n}
-              onPress={() => set('repTarget', n)}
-              style={[
-                styles.preset,
-                {
-                  backgroundColor: active ? primitives.energy[50] : t.bgSurface,
-                  borderColor: active ? primitives.energy[600] : t.border,
-                },
-              ]}
+        <Section title={strings.form.safety}>
+          <Block first>
+            <RowText
+              title={strings.form.cameraBackup}
+              body={strings.form.backupBody(STEPS_PER_REP)}
+            />
+          </Block>
+          <Block>
+            <Text
+              style={[typeScale.label, styles.blockTitle, { color: t.textPrimary }]}
             >
-              <Text
-                style={[
-                  typeScale.heading,
-                  { color: active ? primitives.energy[600] : t.textPrimary },
-                ]}
-              >
-                {n}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        {strings.form.difficulty}
-      </Text>
-      <View style={styles.row}>
-        {DIFFICULTIES.map((d) => {
-          const active = value.difficulty === d;
-          return (
-            <Pressable
-              key={d}
-              onPress={() => set('difficulty', d)}
-              style={[
-                styles.preset,
-                {
-                  backgroundColor: active ? t.textPrimary : t.bgSurface,
-                  borderColor: t.border,
-                },
-              ]}
+              {strings.form.lockWindow}
+            </Text>
+            <OptionRow>
+              {LOCK_IN_OPTIONS.map((mins) => (
+                <Option
+                  key={mins}
+                  fill
+                  label={strings.form.minutes(mins)}
+                  selected={value.lockInMinutes === mins}
+                  onPress={() => set('lockInMinutes', mins)}
+                />
+              ))}
+            </OptionRow>
+            <Text
+              style={[typeScale.bodySmall, styles.note, { color: t.textSecondary }]}
             >
-              <Text
-                style={[
-                  typeScale.bodySmall,
-                  { color: active ? t.bgSurface : t.textPrimary },
-                ]}
-              >
-                {strings.difficulty[d]}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+              {strings.form.lockNote(value.lockInMinutes)}
+            </Text>
+          </Block>
+        </Section>
+      </ScrollView>
 
-      <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        {strings.form.sound}
-      </Text>
-      <SoundPicker
-        value={value.ringtone}
-        onChange={(ringtone) => set('ringtone', ringtone)}
-      />
-
-      <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        {strings.form.backup}
-      </Text>
-      <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-        {strings.form.backupBody(STEPS_PER_REP)}
-      </Text>
-
-      <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-        {strings.form.locksBefore}
-      </Text>
-      <View style={styles.row}>
-        {LOCK_IN_OPTIONS.map((mins) => {
-          const active = value.lockInMinutes === mins;
-          return (
-            <Pressable
-              key={mins}
-              onPress={() => set('lockInMinutes', mins)}
-              style={[
-                styles.preset,
-                {
-                  backgroundColor: active ? t.stateLocked : t.bgSurface,
-                  borderColor: t.border,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  typeScale.bodySmall,
-                  { color: active ? t.textOnAccent : t.textPrimary },
-                ]}
-              >
-                {strings.form.minutes(mins)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text
-        style={[typeScale.bodySmall, { color: t.textSecondary, marginTop: space.xs }]}
-      >
-        {strings.form.lockNote(value.lockInMinutes)}
-      </Text>
-
-      <View style={styles.cta}>
+      {/* Pinned: saving is always one tap away, whatever you scrolled to. */}
+      <View style={[styles.footer, { borderTopColor: t.border }]}>
         <PrimaryButton label={submitLabel} onPress={handleSubmit} />
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { paddingBottom: space.xl },
-  section: { marginTop: space.lg, marginBottom: space.sm },
-  ringsIn: { marginTop: space.sm, marginBottom: space.sm },
-  row: { flexDirection: 'row', flexWrap: 'wrap' },
+  root: { flex: 1 },
+  scroll: { paddingBottom: space.lg },
+  ringsIn: { marginTop: space.md, marginBottom: space.md },
   // All seven days on one line at any width: spread, never wrap.
   days: { flexDirection: 'row', justifyContent: 'space-between' },
   dayDot: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  preset: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    marginRight: space.sm,
-    marginBottom: space.sm,
-    minWidth: 64,
-    alignItems: 'center',
-  },
-  cta: { marginTop: space.xl },
+  blockTitle: { marginBottom: space.sm },
+  note: { marginTop: space.sm },
+  footer: { borderTopWidth: 1, paddingTop: space.md },
 });

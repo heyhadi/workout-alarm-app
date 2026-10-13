@@ -13,8 +13,8 @@ import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, type as typeScale } from '../../theme/tokens';
 import { useStrings } from '../i18n';
 
-const ITEM_HEIGHT = 44;
-const VISIBLE_ROWS = 5;
+const ITEM_HEIGHT = 58;
+const VISIBLE_ROWS = 3;
 const PAD_ROWS = (VISIBLE_ROWS - 1) / 2;
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
@@ -132,9 +132,7 @@ export function TimeWheel({ value, onChange }: TimeWheelProps) {
   const minute = Number.isFinite(m) ? m : 0;
 
   return (
-    <View
-      style={[styles.wheel, { backgroundColor: t.bgSurface, borderColor: t.border }]}
-    >
+    <View style={styles.wheel}>
       <View
         pointerEvents="none"
         style={[styles.band, { backgroundColor: primitives.energy[50] }]}
@@ -157,27 +155,25 @@ export function TimeWheel({ value, onChange }: TimeWheelProps) {
 }
 
 const styles = StyleSheet.create({
+  // Sits inside a Card: no border of its own.
   wheel: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: ITEM_HEIGHT * VISIBLE_ROWS,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    marginTop: 4,
     overflow: 'hidden',
   },
   band: {
     position: 'absolute',
-    left: 8,
-    right: 8,
+    left: 0,
+    right: 0,
     top: PAD_ROWS * ITEM_HEIGHT,
     height: ITEM_HEIGHT,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
   },
-  column: { width: 88, height: ITEM_HEIGHT * VISIBLE_ROWS },
+  column: { width: 96, height: ITEM_HEIGHT * VISIBLE_ROWS },
   row: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  selected: { fontSize: 34, lineHeight: 40 },
-  other: { fontSize: 22, lineHeight: 28 },
-  colon: { fontSize: 34, lineHeight: 40, marginHorizontal: 4 },
+  selected: { fontSize: 44, lineHeight: 52 },
+  other: { fontSize: 28, lineHeight: 34 },
+  colon: { fontSize: 44, lineHeight: 52, marginHorizontal: 4 },
 });

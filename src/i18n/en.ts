@@ -67,6 +67,10 @@ export const en = {
     hour: 'Hour',
     minute: 'Minute',
     repeat: 'Repeat',
+    workout: 'Workout',
+    safety: 'Safety',
+    cameraBackup: 'Camera backup',
+    lockWindow: 'Lock window',
     exercise: 'Exercise',
     reps: 'Reps',
     difficulty: 'Difficulty',
@@ -138,6 +142,11 @@ export const en = {
   },
   emergency: {
     setting: 'Emergency exit',
+    toggleTitle: 'Slow emergency exit',
+    toggleBody: 'A deliberately hard way out. Off by default.',
+    stateOff: 'No way out — the workout is the only exit.',
+    stateOn:
+      'After 10 minutes of ringing: hold for 60 seconds, then type a sentence. That morning doesn’t count toward your streak.',
     options: { none: 'Off', slow: 'Slow exit' },
     settingBody:
       'For mornings a workout truly can’t happen. After 10 minutes of ringing: hold for 60 seconds, then type a sentence. That morning doesn’t count toward your streak.',
@@ -184,6 +193,11 @@ export const en = {
     followingPhone: (language: string) => `Following your phone: ${language}`,
     readiness: 'Alarm readiness',
     ready: 'Ready',
+    readyBody: 'All alarm permissions are on.',
+    fixBody: 'Tap to see what’s missing.',
+    backupTitle: 'Walk it off',
+    backupBody: (stepsPerRep: number) =>
+      `${stepsPerRep} steps per rep, counted by the step sensor. Used when the camera can’t count.`,
     toFix: (n: number) => `${n} to fix`,
     devBuild: 'Requires a dev build',
     readinessBody:

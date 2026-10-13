@@ -23,7 +23,7 @@ describe('strings', () => {
     const t = { days: 0, hours: 7, minutes: 12 };
     expect(en.timeUntil(t)).toBe('7 h 12 min');
     expect(id.timeUntil(t)).toBe('7 jam 12 menit');
-    expect(id.timeUntil({ days: 0, hours: 0, minutes: 0 })).toBe('kurang dari semenit');
+    expect(id.timeUntil({ days: 0, hours: 0, minutes: 0 })).toBe('kurang dari 1 menit');
   });
 
   it('has a day letter for every weekday', () => {

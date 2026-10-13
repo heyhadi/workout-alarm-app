@@ -21,7 +21,9 @@ describe('phraseMatches', () => {
 
   it('ignores case, spacing and punctuation', () => {
     expect(phraseMatches('i am  choosing to skip my workout today', phrase)).toBe(true);
-    expect(phraseMatches('  I AM CHOOSING TO SKIP MY WORKOUT TODAY!! ', phrase)).toBe(true);
+    expect(phraseMatches('  I AM CHOOSING TO SKIP MY WORKOUT TODAY!! ', phrase)).toBe(
+      true,
+    );
   });
 
   it('requires every word', () => {
@@ -32,6 +34,8 @@ describe('phraseMatches', () => {
 
   it('works for Indonesian', () => {
     const id = 'Saya memilih untuk melewatkan latihan hari ini.';
-    expect(phraseMatches('saya memilih untuk melewatkan latihan hari ini', id)).toBe(true);
+    expect(phraseMatches('saya memilih untuk melewatkan latihan hari ini', id)).toBe(
+      true,
+    );
   });
 });

@@ -1,13 +1,14 @@
 /**
- * Bahasa Indonesia. Same shape as `en` (enforced by the Strings type).
- * Informal "kamu", like most Indonesian phone apps; exercise names keep
- * their common gym loanwords.
+ * Bahasa Indonesia — santai, kayak ngobrol. Same shape as `en` (enforced
+ * by the Strings type). Everyday words over formal ones: "HP" not
+ * "ponsel", "rep" not "repetisi", "kalau", "nggak". Say what happens to
+ * the user, not how Android calls it.
  */
 import type { Strings } from './en';
 
 export const id: Strings = {
   common: {
-    loading: 'Memuat…',
+    loading: 'Sebentar…',
     done: 'Selesai',
   },
   // Minggu, Senin, Selasa, Rabu, Kamis, Jumat, Sabtu.
@@ -17,15 +18,15 @@ export const id: Strings = {
     pushups: 'Push-up',
     jumping_jacks: 'Jumping jack',
     situps: 'Sit-up',
-    steps: 'Langkah',
+    steps: 'Jalan',
   },
   difficulty: {
-    easy: 'Mudah',
-    standard: 'Standar',
-    hard: 'Sulit',
+    easy: 'Santai',
+    standard: 'Normal',
+    hard: 'Berat',
   },
   timeUntil: ({ days, hours, minutes }) => {
-    if (days === 0 && hours === 0 && minutes === 0) return 'kurang dari semenit';
+    if (days === 0 && hours === 0 && minutes === 0) return 'kurang dari 1 menit';
     if (days > 0) return hours > 0 ? `${days} hari ${hours} jam` : `${days} hari`;
     if (hours > 0) return `${hours} jam ${minutes} menit`;
     return `${minutes} menit`;
@@ -39,199 +40,215 @@ export const id: Strings = {
 
   alarms: {
     title: 'Alarm',
-    practice: 'Latihan',
+    practice: 'Coba dulu',
     settings: 'Pengaturan',
     notReadyTitle: 'Alarm kamu belum siap',
     notReadyBody: (n) =>
-      `${n} pengaturan belum aktif — alarm bisa berbunyi tanpa membuka layar latihan.`,
-    fixNow: 'Perbaiki',
-    nextAlarm: (when) => `Alarm berikutnya dalam ${when}`,
-    locked: (time) => `Terkunci — bunyi ${time}`,
-    empty: 'Belum ada alarm. Tambahkan alarm pertamamu di bawah.',
+      `Ada ${n} hal yang belum diizinkan. Bisa-bisa alarm bunyi tapi layar olahraganya nggak muncul.`,
+    fixNow: 'Beresin',
+    nextAlarm: (when) => `Alarm berikutnya ${when} lagi`,
+    locked: (time) => `Dikunci — bunyi jam ${time}`,
+    empty: 'Belum ada alarm. Bikin yang pertama di bawah.',
     newAlarm: '+ Alarm baru',
   },
   card: {
-    reps: (n) => `${n} repetisi`,
+    reps: (n) => `${n} rep`,
     delete: 'Hapus',
     deleteLabel: (time) => `Hapus alarm ${time}`,
   },
   form: {
-    time: 'Waktu',
-    ringsIn: (when) => `Berbunyi dalam ${when}`,
+    time: 'Jam',
+    ringsIn: (when) => `Bunyi ${when} lagi`,
     hour: 'Jam',
     minute: 'Menit',
-    repeat: 'Ulangi',
+    repeat: 'Ulangi tiap',
+    workout: 'Olahraga',
+    safety: 'Pengaman',
+    cameraBackup: 'Kalau kamera gagal',
+    lockWindow: 'Waktu kunci',
     exercise: 'Gerakan',
-    reps: 'Repetisi',
-    difficulty: 'Tingkat kesulitan',
+    reps: 'Jumlah rep',
+    difficulty: 'Tingkat',
     sound: 'Suara',
-    backup: 'Cadangan jika kamera gagal',
+    backup: 'Kalau kamera gagal',
     backupBody: (stepsPerRep) =>
-      `Ganti dengan jalan: ${stepsPerRep} langkah per repetisi, dihitung sensor langkah. Dipakai saat kamera tertutup, ditolak, atau tidak melihatmu selama 2 menit.`,
-    locksBefore: 'Terkunci sebelum berbunyi',
+      `Ganti jalan aja: ${stepsPerRep} langkah = 1 rep, dihitung sama HP. Dipakai kalau kamera ketutup, nggak diizinkan, atau nggak lihat kamu selama 2 menit.`,
+    locksBefore: 'Dikunci sebelum bunyi',
     minutes: (m) => `${m} mnt`,
     lockNote: (m) =>
-      `Terkunci ${m} menit sebelum berbunyi — selama itu alarm tidak bisa diubah, diringankan, atau dihapus.`,
+      `${m} menit sebelum bunyi, alarm dikunci — nggak bisa diubah, dikurangi, atau dihapus.`,
     save: 'Simpan alarm',
-    saveChanges: 'Simpan perubahan',
+    saveChanges: 'Simpan',
   },
   sound: {
-    phoneDefault: 'Bawaan ponsel',
+    phoneDefault: 'Suara bawaan HP',
     change: 'Ganti',
-    needsDevBuild: 'Memilih suara butuh dev build.',
+    needsDevBuild: 'Ganti suara cuma bisa di dev build.',
     label: (title) => `Suara alarm: ${title}`,
   },
   workout: {
     framing: {
-      in_frame: { pill: 'Terlihat', cue: null },
-      partial: { pill: 'Sebagian terlihat', cue: 'Mundur sedikit' },
-      none: { pill: 'Tidak terlihat', cue: 'Masuk ke bingkai kamera' },
+      in_frame: { pill: 'Kelihatan', cue: null },
+      partial: { pill: 'Kepotong', cue: 'Mundur dikit' },
+      none: { pill: 'Nggak kelihatan', cue: 'Masuk ke kamera dulu' },
     },
-    allowCamera: 'Izinkan kamera untuk menghitung repetisi',
-    noSteps: 'Ponsel ini tidak bisa menghitung langkah',
+    allowCamera: 'Izinkan kamera biar rep bisa dihitung',
+    noSteps: 'HP ini nggak bisa ngitung langkah',
     walk: 'Jalan atau jalan di tempat',
-    stepsSetup: 'Kamera tidak bisa menghitung sekarang — ganti dengan jalan.',
+    stepsSetup: 'Kamera lagi nggak bisa ngitung — ganti jalan aja.',
     demo: 'Mode demo',
-    stepBackup: 'Cadangan langkah',
+    stepBackup: 'Ganti jalan',
     of: (target) => `dari ${target}`,
-    toGo: (n, unit) => `${n} ${unit === 'steps' ? 'langkah' : 'repetisi'} lagi`,
+    toGo: (n, unit) => `${n} ${unit === 'steps' ? 'langkah' : 'rep'} lagi`,
   },
   instructions: {
     squats: {
       setup:
-        'Sandarkan ponsel, lalu mundur sampai seluruh tubuhmu terlihat, menghadap kamera.',
+        'Sandarin HP, terus mundur sampai badan kamu kelihatan semua. Hadap kamera.',
       howTo:
-        'Berdiri tegak, tekuk lutut sampai pinggul turun di bawah lutut — lalu berdiri tegak lagi. Itu satu repetisi.',
+        'Berdiri tegak, jongkok sampai pinggul lebih rendah dari lutut, terus berdiri lagi. Itu 1 rep.',
     },
     pushups: {
       setup:
-        'Letakkan ponsel miring menghadapmu, cukup jauh untuk melihat seluruh tubuhmu dari samping.',
+        'Taruh HP miring ngadep kamu, agak jauh biar badan kelihatan dari samping.',
       howTo:
-        'Dari posisi plank, turunkan dada sampai siku menekuk lebih dari 90°, lalu dorong sampai lengan lurus lagi.',
+        'Dari posisi plank, turunin dada sampai siku nekuk, terus dorong lagi sampai tangan lurus.',
     },
     jumping_jacks: {
       setup:
-        'Sandarkan ponsel, lalu mundur sampai seluruh tubuhmu terlihat, menghadap kamera.',
+        'Sandarin HP, terus mundur sampai badan kamu kelihatan semua. Hadap kamera.',
       howTo:
-        'Lompat: kaki terbuka dan tepuk tangan di atas kepala, lalu lompat kembali ke kaki rapat, tangan di samping badan.',
+        'Lompat sambil buka kaki dan tepuk tangan di atas kepala, terus lompat balik ke posisi awal.',
     },
     situps: {
       setup:
-        'Letakkan ponsel miring menghadapmu, cukup jauh untuk melihat seluruh tubuhmu dari samping.',
+        'Taruh HP miring ngadep kamu, agak jauh biar badan kelihatan dari samping.',
       howTo:
-        'Berbaring telentang, angkat badan sampai dada mendekati lutut — lalu turunkan sepenuhnya lagi.',
+        'Tiduran, angkat badan sampai dada dekat ke lutut, terus turun lagi sampai rebahan.',
     },
     steps: {
-      setup: 'Simpan ponsel di saku atau genggam.',
-      howTo: 'Jalan atau jalan di tempat. Langkah dihitung sensor gerak, tanpa kamera.',
+      setup: 'Pegang HP atau taruh di saku.',
+      howTo:
+        'Jalan atau jalan di tempat. Langkahnya dihitung sama HP, nggak perlu kamera.',
     },
   },
   ringing: {
-    wakingUp: 'Membangunkan…',
+    wakingUp: 'Bangun, bangun…',
   },
   emergency: {
     setting: 'Jalan keluar darurat',
-    options: { none: 'Mati', slow: 'Keluar lambat' },
+    toggleTitle: 'Keluar darurat (pelan)',
+    toggleBody:
+      'Cara matiin alarm tanpa olahraga, tapi sengaja dibikin ribet. Awalnya mati.',
+    stateOff: 'Nggak ada jalan keluar — satu-satunya cara ya olahraga.',
+    stateOn:
+      'Setelah alarm bunyi 10 menit: tahan tombol 60 detik, terus ketik satu kalimat. Pagi itu nggak masuk streak.',
+    options: { none: 'Mati', slow: 'Nyala' },
     settingBody:
-      'Untuk pagi saat latihan benar-benar tidak mungkin. Setelah alarm berbunyi 10 menit: tahan 60 detik, lalu ketik sebuah kalimat. Pagi itu tidak dihitung dalam streak.',
-    link: 'Jalan keluar darurat',
-    title: 'Jalan keluar darurat',
-    body: 'Tahan tombol selama 60 detik tanpa melepas. Lalu ketik kalimatnya untuk mematikan alarm. Hari ini tidak dihitung dalam streak.',
-    hold: 'Tahan untuk lanjut',
+      'Buat pagi yang beneran nggak bisa olahraga. Setelah bunyi 10 menit: tahan 60 detik, terus ketik kalimat. Pagi itu nggak masuk streak.',
+    link: 'Keluar darurat',
+    title: 'Keluar darurat',
+    body: 'Tahan tombolnya 60 detik, jangan dilepas. Terus ketik kalimatnya buat matiin alarm. Hari ini nggak masuk streak.',
+    hold: 'Tahan di sini',
     holding: (secondsLeft) => `Terus tahan… ${secondsLeft} dtk`,
     typePrompt: 'Ketik kalimat ini persis:',
-    phrase: 'Saya memilih untuk melewatkan latihan hari ini.',
-    exit: 'Matikan alarm',
-    cancel: 'Kembali ke latihan',
+    phrase: 'Saya memilih untuk melewatkan olahraga hari ini.',
+    exit: 'Matiin alarm',
+    cancel: 'Balik olahraga',
   },
   practice: {
-    label: 'Latihan · tanpa alarm',
-    again: 'Lagi',
-    done: (n) => `Selesai — ${n} terhitung`,
+    label: 'Coba dulu · tanpa alarm',
+    again: 'Ulang',
+    done: (n) => `Beres — ${n} kehitung`,
   },
   done: {
-    skippedTitle: 'Dilewati.',
-    skippedBody: 'Jalan keluar darurat dipakai. Hari ini tidak dihitung dalam streak.',
-    released: 'Bebas.',
-    body: 'Tak ada snooze yang lolos. Ponselmu milikmu lagi.',
-    reps: 'Repetisi',
+    skippedTitle: 'Dilewatin.',
+    skippedBody: 'Kamu pakai keluar darurat. Hari ini nggak masuk streak.',
+    released: 'Beres!',
+    body: 'Alarm mati, HP kamu bebas lagi.',
+    reps: 'Rep',
     time: 'Waktu',
-    streak: 'Beruntun',
-    total: 'Total latihan',
-    shareNote: 'Kartu streak untuk dibagikan hadir di versi berikutnya.',
+    streak: 'Streak',
+    total: 'Total olahraga',
+    shareNote: 'Kartu streak buat dibagikan bakal ada nanti.',
   },
   settings: {
     title: 'Pengaturan',
     language: 'Bahasa',
     languageOptions: {
-      system: 'Ikuti ponsel',
+      system: 'Ikut HP',
       en: 'English',
       id: 'Bahasa Indonesia',
     },
     languageShort: {
-      system: 'Ponsel',
+      system: 'Ikut HP',
       en: 'English',
       id: 'Indonesia',
     },
-    followingPhone: (language) => `Mengikuti ponsel: ${language}`,
+    followingPhone: (language) => `Ikut bahasa HP: ${language}`,
     readiness: 'Kesiapan alarm',
     ready: 'Siap',
-    toFix: (n) => `${n} perlu diperbaiki`,
+    readyBody: 'Semua izin alarm udah aktif.',
+    fixBody: 'Ketuk buat lihat apa yang kurang.',
+    backupTitle: 'Ganti jalan',
+    backupBody: (stepsPerRep) =>
+      `${stepsPerRep} langkah = 1 rep, dihitung sama HP. Dipakai kalau kamera nggak bisa ngitung.`,
+    toFix: (n) => `${n} belum beres`,
     devBuild: 'Perlu dev build',
     readinessBody:
-      'Izin yang dibutuhkan alarm untuk berbunyi, mengambil alih layar, dan diselesaikan.',
-    lockIn: 'Jendela kunci bawaan',
+      'Izin yang dibutuhin alarm biar bisa bunyi, muncul di layar, dan dimatiin.',
+    lockIn: 'Waktu kunci bawaan',
   },
   readiness: {
-    title: 'Siapkan alarm',
-    checking: 'Memeriksa…',
-    allSet: 'Semua siap — alarm bisa berbunyi, mengambil alih layar, dan diselesaikan.',
+    title: 'Siapin alarm',
+    checking: 'Lagi ngecek…',
+    allSet: 'Udah siap semua — alarm bisa bunyi, muncul di layar, dan dimatiin.',
     progress: (done, total) =>
-      `${done} dari ${total} siap · diperiksa ulang saat kamu kembali`,
+      `${done} dari ${total} beres · dicek lagi pas kamu balik`,
     allow: 'Izinkan',
     open: 'Buka',
-    confirm: 'Sudah',
-    finishLater: 'Nanti saja',
+    confirm: 'Udah',
+    finishLater: 'Nanti aja',
     items: {
       notifications: {
         title: 'Notifikasi',
-        why: 'Tanpa ini alarm tidak bisa tampil atau membuka layar latihan.',
+        why: 'Tanpa ini alarm nggak bisa muncul.',
       },
       fullScreen: {
-        title: 'Alarm layar penuh',
-        why: 'Membuka layar latihan di atas layar kunci.',
+        title: 'Muncul di layar kunci',
+        why: 'Biar layar olahraga langsung muncul walau HP kekunci.',
       },
       overlay: {
-        title: 'Tampil di atas aplikasi lain',
-        why: 'Mengambil alih layar saat kamu sedang memakai ponsel.',
+        title: 'Muncul di atas aplikasi lain',
+        why: 'Biar alarm tetap muncul walau kamu lagi main HP.',
       },
       autostart: {
         title: 'Xiaomi: Mulai otomatis',
-        why: 'Android tidak bisa memeriksa ini — aktifkan, lalu ketuk Sudah.',
+        why: 'Ini nggak bisa dicek otomatis. Nyalain dulu, terus ketuk Udah.',
       },
       battery: {
         title: 'Baterai: tanpa batasan',
-        why: 'Agar alarm tidak dihentikan saat malam.',
+        why: 'Biar alarm nggak dimatiin HP pas malam.',
       },
-      camera: { title: 'Kamera', why: 'Menghitung repetisimu.' },
+      camera: { title: 'Kamera', why: 'Buat ngitung rep kamu.' },
       steps: {
-        title: 'Penghitung langkah',
-        why: 'Cadangan saat kamera tidak bisa menghitung.',
+        title: 'Hitung langkah',
+        why: 'Cadangan kalau kamera nggak bisa ngitung.',
       },
-      exactAlarms: { title: 'Alarm tepat waktu', why: 'Berbunyi tepat di menitnya.' },
+      exactAlarms: { title: 'Alarm tepat waktu', why: 'Biar bunyi pas di menitnya.' },
     },
   },
   update: {
-    available: 'Pembaruan tersedia',
-    downloading: 'Mengunduh…',
+    available: 'Ada versi baru',
+    downloading: 'Lagi download…',
     needsPermission:
-      'Izinkan pemasangan dari Workout Alarm di pengaturan yang terbuka, lalu ketuk Pasang lagi.',
-    failed: 'Gagal memasang pembaruan. Periksa koneksimu lalu coba lagi.',
+      'Izinkan Workout Alarm pasang aplikasi di pengaturan yang kebuka, terus ketuk Pasang lagi.',
+    failed: 'Gagal pasang update. Cek internet kamu terus coba lagi.',
     ready: (title) => `${title} siap dipasang.`,
     install: 'Pasang',
   },
   error: {
-    title: 'Terjadi kesalahan',
-    body: 'Alarm kamu tetap terjadwal dan akan berbunyi seperti biasa. Buka ulang aplikasi untuk melanjutkan.',
+    title: 'Ada yang error',
+    body: 'Alarm kamu tetap jalan dan bakal bunyi kayak biasa. Buka ulang aplikasinya ya.',
   },
 };

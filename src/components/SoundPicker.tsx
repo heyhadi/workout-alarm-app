@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getSemanticTokens } from '../../theme/helpers';
-import { radius, space, type as typeScale } from '../../theme/tokens';
+import { space, type as typeScale } from '../../theme/tokens';
 import { soundUriOf } from '../native/alarms';
 import { useStrings } from '../i18n';
 import {
@@ -55,7 +55,7 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
       accessibilityLabel={strings.sound.label(title)}
       disabled={!available}
       onPress={handlePress}
-      style={[styles.row, { backgroundColor: t.bgSurface, borderColor: t.border }]}
+      style={styles.row}
     >
       <View style={styles.main}>
         <Text style={[typeScale.body, { color: t.textPrimary }]} numberOfLines={1}>
@@ -77,15 +77,13 @@ export function SoundPicker({ value, onChange }: SoundPickerProps) {
 }
 
 const styles = StyleSheet.create({
+  // A plain row: the surrounding Card draws the box.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: radius.md,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
-    minHeight: 48,
-    marginTop: space.xs,
+    minHeight: 56,
   },
   main: { flex: 1, marginRight: space.md },
 });

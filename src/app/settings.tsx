@@ -1,11 +1,12 @@
-import { useState, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
+import { Block, RowText, Section } from '../components/Card';
 import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
 import { systemLanguage, useLanguageSetting, useStrings } from '../i18n';
 import { getSemanticTokens } from '../../theme/helpers';
-import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
+import { primitives, space, type as typeScale } from '../../theme/tokens';
 import {
   getSettings,
   setEmergencyExit,
@@ -13,32 +14,10 @@ import {
   type LanguageSetting,
 } from '../storage/settings';
 import { STEPS_PER_REP } from '../native/steps';
-import type { EmergencyExitMode } from '../types';
 
 const LOCK_IN_OPTIONS = [15, 30, 45, 60];
 
-function SectionTitle({ children }: { children: string }) {
-  const t = getSemanticTokens('day');
-  return (
-    <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
-      {children}
-    </Text>
-  );
-}
-
-/** One card, hairline-separated rows — every section on this screen uses it. */
-function Group({ children }: { children: ReactNode }) {
-  const t = getSemanticTokens('day');
-  return (
-    <View
-      style={[styles.group, { backgroundColor: t.bgSurface, borderColor: t.border }]}
-    >
-      {children}
-    </View>
-  );
-}
-
-/** Equal-width segments in a Group (language, lock-in window). */
+/** Joined equal-width segments filling a card (language, lock-in window). */
 function Segments<T extends string | number>({
   options,
   selected,
@@ -50,57 +29,54 @@ function Segments<T extends string | number>({
 }) {
   const t = getSemanticTokens('day');
   return (
-    <Group>
-      <View style={styles.segments}>
-        {options.map((option, index) => {
-          const isSelected = option.value === selected;
-          return (
-            <Pressable
-              key={String(option.value)}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: isSelected }}
-              onPress={() => onSelect(option.value)}
+    <View style={styles.segments}>
+      {options.map((option, index) => {
+        const isSelected = option.value === selected;
+        return (
+          <Pressable
+            key={String(option.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: isSelected }}
+            onPress={() => onSelect(option.value)}
+            style={[
+              styles.segment,
+              index > 0 && { borderLeftWidth: 1, borderLeftColor: t.border },
+              isSelected && { backgroundColor: primitives.energy[50] },
+            ]}
+          >
+            <Text
+              numberOfLines={1}
               style={[
-                styles.segment,
-                index > 0 && [styles.segmentDivider, { borderLeftColor: t.border }],
-                isSelected && { backgroundColor: primitives.energy[50] },
+                typeScale.body,
+                { color: isSelected ? primitives.energy[600] : t.textPrimary },
               ]}
             >
-              <Text
-                numberOfLines={1}
-                style={[
-                  isSelected ? typeScale.label : typeScale.bodySmall,
-                  { color: isSelected ? primitives.energy[600] : t.textPrimary },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </Group>
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
 /**
- * Screen 6 — Settings.
- * Language, alarm readiness (links to the checklist), step backup,
- * emergency exit (off by default), lock-in default. Every option here is live — no placeholders.
+ * Screen 6 — Settings. Language, alarm readiness (links to the
+ * checklist), emergency exit (off by default), step backup, lock-in
+ * default. Every option here is live — no placeholders.
  */
 export default function SettingsScreen() {
   const t = getSemanticTokens('day');
   const strings = useStrings();
+  const s = strings.settings;
+  const e = strings.emergency;
   const [language, setLanguage] = useLanguageSetting();
   const router = useRouter();
   const { items, pending } = useAlarmReadiness();
   // Synchronous MMKV reads belong in lazy initializers, not effects.
   const [lockIn, setLockIn] = useState(() => getSettings().lockInMinutes);
-  const [emergencyExit, setEmergencyExitState] = useState<EmergencyExitMode>(
-    () => getSettings().emergencyExit,
-  );
+  const [valveOn, setValveOn] = useState(() => getSettings().emergencyExit === 'slow');
 
-  const s = strings.settings;
   const hasReadiness = items !== null && items.length > 0;
   const readinessColor = !hasReadiness
     ? primitives.warning[500]
@@ -115,86 +91,79 @@ export default function SettingsScreen() {
           {s.title}
         </Text>
 
-        <SectionTitle>{s.language}</SectionTitle>
-        <Segments<LanguageSetting>
-          selected={language}
-          onSelect={setLanguage}
-          options={(['system', 'en', 'id'] as LanguageSetting[]).map((value) => ({
-            value,
-            label: s.languageShort[value],
-          }))}
-        />
+        <Section title={s.language}>
+          <Segments<LanguageSetting>
+            selected={language}
+            onSelect={setLanguage}
+            options={(['system', 'en', 'id'] as LanguageSetting[]).map((value) => ({
+              value,
+              label: s.languageShort[value],
+            }))}
+          />
+        </Section>
         {language === 'system' && (
           <Text style={[typeScale.bodySmall, styles.hint, { color: t.textSecondary }]}>
             {s.followingPhone(s.languageOptions[systemLanguage()])}
           </Text>
         )}
 
-        <SectionTitle>{s.readiness}</SectionTitle>
-        <Group>
+        <Section title={s.readiness}>
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/readiness')}
             style={styles.row}
           >
             <View style={[styles.dot, { backgroundColor: readinessColor }]} />
-            <View style={styles.rowMain}>
-              <Text style={[typeScale.label, { color: t.textPrimary }]}>
-                {!hasReadiness
-                  ? s.devBuild
-                  : pending === 0
-                    ? s.ready
-                    : s.toFix(pending)}
-              </Text>
-              <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-                {s.readinessBody}
-              </Text>
-            </View>
-            <Text style={[typeScale.heading, styles.check, { color: t.textSecondary }]}>
-              ›
-            </Text>
+            <RowText
+              title={
+                !hasReadiness ? s.devBuild : pending === 0 ? s.ready : s.toFix(pending)
+              }
+              body={!hasReadiness ? undefined : pending === 0 ? s.readyBody : s.fixBody}
+            />
+            <Text style={[typeScale.heading, { color: t.textSecondary }]}>›</Text>
           </Pressable>
-        </Group>
+        </Section>
 
-        <SectionTitle>{strings.form.backup}</SectionTitle>
-        <Group>
-          <View style={styles.row}>
-            <Text
-              style={[typeScale.bodySmall, styles.rowMain, { color: t.textSecondary }]}
-            >
-              {strings.form.backupBody(STEPS_PER_REP)}
+        <Section title={e.setting}>
+          <Block first style={styles.rowBlock}>
+            <RowText title={e.toggleTitle} body={e.toggleBody} />
+            <Switch
+              value={valveOn}
+              onValueChange={(on) => {
+                setValveOn(on);
+                setEmergencyExit(on ? 'slow' : 'none');
+              }}
+              trackColor={{ true: primitives.energy[500], false: t.border }}
+              thumbColor={primitives.white}
+              accessibilityLabel={e.toggleTitle}
+            />
+          </Block>
+          <Block>
+            <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
+              {valveOn ? e.stateOn : e.stateOff}
             </Text>
-          </View>
-        </Group>
+          </Block>
+        </Section>
 
-        <SectionTitle>{strings.emergency.setting}</SectionTitle>
-        <Segments<EmergencyExitMode>
-          selected={emergencyExit}
-          onSelect={(mode) => {
-            setEmergencyExitState(mode);
-            setEmergencyExit(mode);
-          }}
-          options={(['none', 'slow'] as EmergencyExitMode[]).map((value) => ({
-            value,
-            label: strings.emergency.options[value],
-          }))}
-        />
-        <Text style={[typeScale.bodySmall, styles.hint, { color: t.textSecondary }]}>
-          {strings.emergency.settingBody}
-        </Text>
+        <Section title={strings.form.backup}>
+          <Block first>
+            <RowText title={s.backupTitle} body={s.backupBody(STEPS_PER_REP)} />
+          </Block>
+        </Section>
 
-        <SectionTitle>{s.lockIn}</SectionTitle>
-        <Segments<number>
-          selected={lockIn}
-          onSelect={(mins) => {
-            setLockIn(mins);
-            setLockInMinutes(mins);
-          }}
-          options={LOCK_IN_OPTIONS.map((mins) => ({
-            value: mins,
-            label: strings.form.minutes(mins),
-          }))}
-        />
+        <Section title={s.lockIn}>
+          <Segments<number>
+            selected={lockIn}
+            onSelect={(mins) => {
+              setLockIn(mins);
+              setLockInMinutes(mins);
+            }}
+            options={LOCK_IN_OPTIONS.map((mins) => ({
+              value: mins,
+              label: strings.form.minutes(mins),
+            }))}
+          />
+        </Section>
       </ScrollView>
     </Screen>
   );
@@ -202,27 +171,22 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: space.xl },
-  section: { marginTop: space.lg, marginBottom: space.sm },
-  group: { borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
+  hint: { marginTop: space.xs, marginLeft: space.xs },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm + 2,
-    minHeight: 56,
+    padding: space.md,
     gap: space.md,
+    minHeight: 64,
   },
-  divider: { borderTopWidth: 1 },
-  rowMain: { flex: 1 },
-  check: { width: 20, textAlign: 'center' },
-  dot: { width: 12, height: 12, borderRadius: 6 },
+  rowBlock: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  dot: { width: 14, height: 14, borderRadius: 7 },
   segments: { flexDirection: 'row' },
   segment: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 56,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: space.xs,
   },
-  segmentDivider: { borderLeftWidth: 1 },
-  hint: { marginTop: space.xs, marginLeft: space.xs },
 });
