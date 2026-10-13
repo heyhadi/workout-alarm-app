@@ -7,7 +7,8 @@ import { getSemanticTokens } from '../../../theme/helpers';
 import { type as typeScale } from '../../../theme/tokens';
 import { getAlarm, upsertAlarm } from '../../storage/db';
 import { applyAlarmSchedule } from '../../native/alarms';
-import { ensureAlarmPermissions } from '../../native/alarmPermissions';
+import { loadChecklist } from '../../native/readiness';
+import { pendingCount } from '../../readiness/checklist';
 import type { Alarm } from '../../types';
 
 /** Edit an existing alarm. Blocked by the list screen inside lock-in. */
@@ -48,8 +49,14 @@ export default function EditAlarmScreen() {
     // The native alarm must follow the edit, or it still fires at the old
     // time with the old exercise.
     await applyAlarmSchedule(updated).catch(() => undefined);
-    await ensureAlarmPermissions();
-    router.back();
+    // Anything the phone still blocks → the readiness checklist, now,
+    // while the user is awake — not at 6 a.m.
+    const checklist = await loadChecklist().catch(() => []);
+    if (pendingCount(checklist) > 0) {
+      router.replace('/readiness');
+    } else {
+      router.back();
+    }
   };
 
   return (

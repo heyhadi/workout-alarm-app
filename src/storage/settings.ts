@@ -20,6 +20,7 @@ const Keys = {
   lockInMinutes: 'lockInMinutes',
   onboardingDone: 'onboardingDone',
   totalWorkouts: 'totalWorkouts',
+  autostartConfirmed: 'autostartConfirmed',
 } as const;
 
 const DEFAULTS: AppSettings = {
@@ -78,4 +79,13 @@ export function incrementTotalWorkouts(): number {
   const next = getTotalWorkouts() + 1;
   storage.set(Keys.totalWorkouts, next);
   return next;
+}
+
+/** Xiaomi Autostart can't be read by apps: the user confirms it instead. */
+export function isAutostartConfirmed(): boolean {
+  return storage.getBoolean(Keys.autostartConfirmed) === true;
+}
+
+export function confirmAutostart(): void {
+  storage.set(Keys.autostartConfirmed, true);
 }

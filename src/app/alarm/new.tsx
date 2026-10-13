@@ -3,7 +3,8 @@ import { Screen } from '../../components/Screen';
 import { AlarmForm, type AlarmFormValue } from '../../components/AlarmForm';
 import { upsertAlarm } from '../../storage/db';
 import { applyAlarmSchedule } from '../../native/alarms';
-import { ensureAlarmPermissions } from '../../native/alarmPermissions';
+import { loadChecklist } from '../../native/readiness';
+import { pendingCount } from '../../readiness/checklist';
 
 const DEFAULTS: AlarmFormValue = {
   time: '06:30',
@@ -32,8 +33,14 @@ export default function NewAlarmScreen() {
     await upsertAlarm(alarm);
     // Expo Go / web: DB-only until a dev build links the native module.
     await applyAlarmSchedule(alarm).catch(() => undefined);
-    await ensureAlarmPermissions();
-    router.back();
+    // Anything the phone still blocks → the readiness checklist, now,
+    // while the user is awake — not at 6 a.m.
+    const checklist = await loadChecklist().catch(() => []);
+    if (pendingCount(checklist) > 0) {
+      router.replace('/readiness');
+    } else {
+      router.back();
+    }
   };
 
   return (

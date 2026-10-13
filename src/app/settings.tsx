@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useCameraPermissions } from 'expo-camera';
-import { useFocusEffect } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
+import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import {
@@ -11,24 +11,8 @@ import {
   setLockInMinutes,
   setStrictness,
 } from '../storage/settings';
-import { isLockdownModuleAvailable } from '../native/lockdown';
-import {
-  getAlarmReadiness,
-  isRingingModuleAvailable,
-  openFullScreenIntentSettings,
-  openOverlaySettings,
-  type AlarmReadiness,
-} from '../native/ringing';
 import { STEPS_PER_REP } from '../native/steps';
 import type { EmergencyExitMode, StrictnessLevel } from '../types';
-
-interface HealthRow {
-  label: string;
-  ok: boolean | null;
-  detail: string;
-  /** Where to fix it, when the system has a page for that. */
-  onFix?: () => void;
-}
 
 function SectionTitle({ children }: { children: string }) {
   const t = getSemanticTokens('day');
@@ -41,12 +25,13 @@ function SectionTitle({ children }: { children: string }) {
 
 /**
  * Screen 6 — Settings & strictness.
- * Permissions health check, strictness level, emergency-exit setup,
- * backup exercise, lock-in default, battery-exemption status.
+ * Alarm readiness (links to the checklist), strictness level,
+ * emergency-exit setup, step backup, lock-in default.
  */
 export default function SettingsScreen() {
   const t = getSemanticTokens('day');
-  const [cameraPermission] = useCameraPermissions();
+  const router = useRouter();
+  const { items, pending } = useAlarmReadiness();
   // Synchronous MMKV reads belong in lazy initializers, not effects.
   const [strictness, setStrictnessState] = useState<StrictnessLevel>(
     () => getSettings().strictness,
@@ -55,85 +40,6 @@ export default function SettingsScreen() {
     () => getSettings().emergencyExit,
   );
   const [lockIn, setLockIn] = useState(() => getSettings().lockInMinutes);
-  // Re-read on focus: the user may have just changed it in system settings.
-  const [readiness, setReadiness] = useState<AlarmReadiness | null>(null);
-  useFocusEffect(
-    useCallback(() => {
-      if (!isRingingModuleAvailable()) return;
-      getAlarmReadiness()
-        .then(setReadiness)
-        .catch(() => undefined);
-    }, []),
-  );
-  const devBuildOnly = 'Requires a dev build — check after prebuild.';
-
-  const health: HealthRow[] = [
-    {
-      label: 'Camera',
-      ok: cameraPermission?.granted ?? null,
-      detail: 'Needed for rep verification.',
-    },
-    {
-      label: 'Notifications',
-      ok: readiness?.notifications ?? null,
-      detail: readiness
-        ? readiness.notifications
-          ? 'Allowed.'
-          : 'Off — tap to allow, or the workout screen can’t open.'
-        : devBuildOnly,
-      onFix:
-        readiness && !readiness.notifications
-          ? () => {
-              Linking.openSettings().catch(() => undefined);
-            }
-          : undefined,
-    },
-    {
-      label: 'Full-screen alarms',
-      ok: readiness?.fullScreen ?? null,
-      detail: readiness
-        ? readiness.fullScreen
-          ? 'Allowed — the workout opens over the lock screen.'
-          : 'Off — tap to allow, or the workout won’t open over the lock screen.'
-        : devBuildOnly,
-      onFix:
-        readiness && !readiness.fullScreen
-          ? () => {
-              openFullScreenIntentSettings().catch(() => undefined);
-            }
-          : undefined,
-    },
-    {
-      label: 'Open over other apps',
-      ok: readiness?.overlay ?? null,
-      detail: readiness
-        ? readiness.overlay
-          ? 'Allowed — the workout takes over even while you use the phone.'
-          : 'Off — while you use the phone, the alarm only shows a notification. Tap to allow (on Xiaomi, also allow pop-up windows in the background).'
-        : devBuildOnly,
-      onFix:
-        readiness && !readiness.overlay
-          ? () => {
-              openOverlaySettings().catch(() => undefined);
-            }
-          : undefined,
-    },
-    {
-      label: 'Exact alarms',
-      ok: readiness?.exactAlarms ?? null,
-      detail: readiness
-        ? readiness.exactAlarms
-          ? 'Allowed — alarms fire on time.'
-          : 'Off — alarms may fire late.'
-        : devBuildOnly,
-    },
-    {
-      label: 'Lock-task mode',
-      ok: isLockdownModuleAvailable() ? true : null,
-      detail: isLockdownModuleAvailable() ? 'LockdownModule linked.' : devBuildOnly,
-    },
-  ];
-
   const pick =
     <T,>(current: T, set: (v: T) => void, persist: (v: T) => void) =>
     (v: T) => {
@@ -148,41 +54,38 @@ export default function SettingsScreen() {
           Settings
         </Text>
 
-        <SectionTitle>Permissions health</SectionTitle>
-        {health.map((row) => (
-          <Pressable
-            key={row.label}
-            disabled={!row.onFix}
-            onPress={row.onFix}
-            accessibilityRole={row.onFix ? 'button' : undefined}
+        <SectionTitle>Alarm readiness</SectionTitle>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/readiness')}
+          style={[styles.card, { backgroundColor: t.bgSurface, borderColor: t.border }]}
+        >
+          <View
             style={[
-              styles.card,
-              { backgroundColor: t.bgSurface, borderColor: t.border },
-            ]}
-          >
-            <View
-              style={[
-                styles.dot,
-                {
-                  backgroundColor:
-                    row.ok === true
+              styles.dot,
+              {
+                backgroundColor:
+                  items === null || items.length === 0
+                    ? primitives.warning[500]
+                    : pending === 0
                       ? primitives.success[500]
-                      : row.ok === false
-                        ? primitives.danger[500]
-                        : primitives.warning[500],
-                },
-              ]}
-            />
-            <View style={styles.rowMain}>
-              <Text style={[typeScale.label, { color: t.textPrimary }]}>
-                {row.label}
-              </Text>
-              <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-                {row.detail}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
+                      : primitives.danger[500],
+              },
+            ]}
+          />
+          <View style={styles.rowMain}>
+            <Text style={[typeScale.label, { color: t.textPrimary }]}>
+              {items && items.length > 0 && pending === 0
+                ? 'Ready'
+                : items && items.length > 0
+                  ? `${pending} to fix`
+                  : 'Requires a dev build'}
+            </Text>
+            <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
+              Permissions the alarm needs to ring, take over the screen and be finished.
+            </Text>
+          </View>
+        </Pressable>
 
         <SectionTitle>Strictness level</SectionTitle>
         {(

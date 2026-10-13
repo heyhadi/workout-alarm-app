@@ -8,6 +8,7 @@ import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -174,8 +175,14 @@ class RingingModule(reactContext: ReactApplicationContext) :
     }
     // Lets the ringing service open the workout over whatever app is in use.
     val overlay = Settings.canDrawOverlays(context)
+    // Exempt from battery optimisation: not killed or deferred overnight.
+    val battery = (context.getSystemService(Context.POWER_SERVICE) as PowerManager)
+      .isIgnoringBatteryOptimizations(context.packageName)
     promise.resolve(Arguments.createMap().apply {
       putBoolean("overlay", overlay)
+      putBoolean("battery", battery)
+      // Xiaomi's own switches (Autostart, background pop-ups) can't be read.
+      putBoolean("xiaomi", isXiaomi())
       putBoolean("notifications", notifications)
       putBoolean("fullScreen", fullScreen)
       putBoolean("exactAlarms", exactAlarms)
@@ -202,8 +209,7 @@ class RingingModule(reactContext: ReactApplicationContext) :
     val standard = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
       .setData(Uri.parse("package:$pkg"))
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    val isXiaomi = Build.MANUFACTURER.equals("xiaomi", ignoreCase = true)
-    for (intent in if (isXiaomi) listOf(xiaomi, standard) else listOf(standard)) {
+    for (intent in if (isXiaomi()) listOf(xiaomi, standard) else listOf(standard)) {
       try {
         context.startActivity(intent)
         promise.resolve(null)
@@ -212,6 +218,45 @@ class RingingModule(reactContext: ReactApplicationContext) :
     }
     promise.reject("SETTINGS_FAILED", "Couldn't open the permission settings")
   }
+
+  /** System dialog: "Let Workout Alarm always run in the background?" */
+  @ReactMethod
+  fun requestIgnoreBatteryOptimizations(promise: Promise) {
+    openFirst(
+      promise,
+      Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+        .setData(Uri.parse("package:${reactApplicationContext.packageName}")),
+      Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+    )
+  }
+
+  /** Xiaomi's Autostart list (HyperOS blocks background starts without it). */
+  @ReactMethod
+  fun openAutostartSettings(promise: Promise) {
+    openFirst(
+      promise,
+      Intent().setClassName(
+        "com.miui.securitycenter",
+        "com.miui.permcenter.autostart.AutoStartManagementActivity"
+      ),
+      Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        .setData(Uri.parse("package:${reactApplicationContext.packageName}"))
+    )
+  }
+
+  /** Start the first intent the phone can handle. */
+  private fun openFirst(promise: Promise, vararg intents: Intent) {
+    for (intent in intents) {
+      try {
+        reactApplicationContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        promise.resolve(null)
+        return
+      } catch (_: Exception) { }
+    }
+    promise.reject("SETTINGS_FAILED", "Couldn't open the settings page")
+  }
+
+  private fun isXiaomi() = Build.MANUFACTURER.equals("xiaomi", ignoreCase = true)
 
   /** Open the system page where the user can allow full-screen alarms. */
   @ReactMethod

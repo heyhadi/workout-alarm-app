@@ -1,10 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlarmCard } from '../components/AlarmCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
 import { UpdateCard } from '../components/UpdateCard';
+import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
+import { isOnboardingDone, markOnboardingDone } from '../storage/settings';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
 import { formatTimeUntil } from '../workout/scheduling';
@@ -35,6 +37,16 @@ export default function AlarmListScreen() {
   const [nextFire, setNextFire] = useState<number | undefined>(undefined);
   // Clock reading taken with nextFire, so render stays pure.
   const [refreshedAt, setRefreshedAt] = useState(0);
+  const readiness = useAlarmReadiness();
+  const notReady = readiness.pending;
+
+  // First launch: walk through the checklist once, if anything's missing.
+  useEffect(() => {
+    if (readiness.items === null || isOnboardingDone()) return;
+    markOnboardingDone();
+    if (notReady > 0) router.push('/readiness');
+  }, [readiness.items, notReady, router]);
+
   const [lockedById, setLockedById] = useState<Map<string, boolean>>(() => new Map());
 
   const refresh = useCallback(async () => {
@@ -128,6 +140,34 @@ export default function AlarmListScreen() {
         ))}
       </View>
 
+      {notReady > 0 && (
+        <View
+          style={[
+            styles.notReady,
+            {
+              backgroundColor: primitives.energy[50],
+              borderColor: primitives.energy[600],
+            },
+          ]}
+        >
+          <Text style={[typeScale.label, { color: primitives.energy[600] }]}>
+            Your alarm isn’t ready
+          </Text>
+          <Text style={[typeScale.bodySmall, { color: t.textPrimary }]}>
+            {`${notReady} setting${notReady === 1 ? '' : 's'} missing — it may ring without opening the workout.`}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/readiness')}
+            style={[styles.fixButton, { backgroundColor: primitives.energy[600] }]}
+          >
+            <Text style={[typeScale.bodySmall, { color: primitives.white }]}>
+              Fix now
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
       <UpdateCard />
 
       {nextFire !== undefined && (
@@ -183,6 +223,22 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: space.md,
     paddingVertical: space.xs,
+  },
+  notReady: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: space.md,
+    marginBottom: space.md,
+    gap: space.xs,
+  },
+  fixButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+    marginTop: space.xs,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   links: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
   link: {

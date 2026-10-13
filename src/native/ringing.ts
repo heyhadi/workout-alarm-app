@@ -38,6 +38,8 @@ interface RingingModuleSpec {
   getSoundTitle(uri: string | null): Promise<string>;
   openFullScreenIntentSettings(): Promise<void>;
   openOverlaySettings(): Promise<void>;
+  requestIgnoreBatteryOptimizations(): Promise<void>;
+  openAutostartSettings(): Promise<void>;
   getActiveRinging(): Promise<{
     alarmId: string;
     exercise: ExerciseType;
@@ -55,6 +57,10 @@ export interface AlarmReadiness {
    * the phone is in use (otherwise only a heads-up notification shows).
    */
   overlay: boolean;
+  /** Exempt from battery optimisation (not killed or deferred overnight). */
+  battery: boolean;
+  /** Xiaomi phone: its Autostart switch matters but can't be read. */
+  xiaomi: boolean;
   notifications: boolean;
   /** Android 14+: allowed to open full-screen over the lock screen. */
   fullScreen: boolean;
@@ -134,6 +140,16 @@ export async function getAlarmReadiness(): Promise<AlarmReadiness> {
  */
 export async function openOverlaySettings(): Promise<void> {
   await spec().openOverlaySettings();
+}
+
+/** System dialog asking to exempt the app from battery optimisation. */
+export async function requestIgnoreBatteryOptimizations(): Promise<void> {
+  await spec().requestIgnoreBatteryOptimizations();
+}
+
+/** Xiaomi's Autostart page (falls back to app info elsewhere). */
+export async function openAutostartSettings(): Promise<void> {
+  await spec().openAutostartSettings();
 }
 
 /** Open the system page for "full-screen notifications" (Android 14+). */
