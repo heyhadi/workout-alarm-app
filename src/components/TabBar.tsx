@@ -1,16 +1,11 @@
-import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
+import { useStrings } from '../i18n';
 import { primitives } from '../../theme/tokens';
 
 type TabId = 'alarm' | 'practice' | 'settings';
-
-const TABS: { id: TabId; label: string; route: string }[] = [
-  { id: 'alarm', label: 'Alarm', route: '/' },
-  { id: 'practice', label: 'Coba dulu', route: '/practice' },
-  { id: 'settings', label: 'Pengaturan', route: '/settings' },
-];
 
 function TabIcon({ id, color }: { id: TabId; color: string }) {
   if (id === 'alarm') {
@@ -54,11 +49,21 @@ function TabIcon({ id, color }: { id: TabId; color: string }) {
 
 export function TabBar({ active }: { active: TabId }) {
   const router = useRouter();
-  const scheme = useColorScheme();
-  const t = getSemanticTokens(scheme === 'dark' ? 'alarm' : 'day');
+  const t = useTokens();
+  const s = useStrings();
+  const tabs: { id: TabId; label: string; route: string }[] = [
+    { id: 'alarm', label: s.alarms.title, route: '/' },
+    { id: 'practice', label: s.alarms.practice, route: '/practice' },
+    { id: 'settings', label: s.alarms.settings, route: '/settings' },
+  ];
   return (
-    <View style={[styles.bar, { backgroundColor: t.bgScreen, borderTopColor: t.border }]}>
-      {TABS.map((tab) => {
+    <View
+      style={[
+        styles.bar,
+        { backgroundColor: t.bgScreen, borderTopColor: t.border },
+      ]}
+    >
+      {tabs.map((tab) => {
         const isActive = tab.id === active;
         const color = isActive ? primitives.energy[500] : t.textSecondary;
         return (
