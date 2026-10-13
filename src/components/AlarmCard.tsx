@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View, useColorScheme } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, space } from '../../theme/tokens';
 import type { Alarm } from '../types';
 import { EXERCISE_LABELS } from './ExerciseChip';
@@ -18,8 +19,9 @@ interface AlarmCardProps {
 }
 
 /**
- * Dark alarm card for the home screen: big tabular time, toggle on the
- * right, exercise + rep target beneath, Indonesian day-of-week dots.
+ * Alarm card for the home screen: big tabular time, toggle on the right,
+ * exercise + rep target beneath, Indonesian day-of-week dots.
+ * Follows the system theme (dark = alarm tokens, light = day tokens).
  * Swipe left to reveal delete (disabled while locked: no dodging the
  * workout by deleting inside the lock-in window).
  */
@@ -31,6 +33,9 @@ export function AlarmCard({
   onPress,
   onDelete,
 }: AlarmCardProps) {
+  const scheme = useColorScheme();
+  const t = getSemanticTokens(scheme === 'dark' ? 'alarm' : 'day');
+
   const renderRightActions = () => (
     <Pressable
       accessibilityRole="button"
@@ -46,11 +51,11 @@ export function AlarmCard({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[styles.card, !alarm.enabled && styles.cardDisabled]}
+      style={[styles.card, { backgroundColor: t.bgSurface }, !alarm.enabled && styles.cardDisabled]}
     >
       <View style={styles.main}>
-        <Text style={styles.time}>{alarm.time}</Text>
-        <Text style={styles.meta}>
+        <Text style={[styles.time, { color: t.textPrimary }]}>{alarm.time}</Text>
+        <Text style={[styles.meta, { color: t.textSecondary }]}>
           {`${EXERCISE_LABELS[alarm.exercise]} · ${alarm.repTarget} rep`}
         </Text>
         <View style={styles.days}>
@@ -59,11 +64,16 @@ export function AlarmCard({
             return (
               <View
                 key={i}
-                style={[styles.dayDot, active && styles.dayDotActive]}
+                style={[
+                  styles.dayDot,
+                  { borderColor: t.border },
+                  active && styles.dayDotActive,
+                ]}
               >
                 <Text
                   style={[
                     styles.dayLetter,
+                    { color: t.textSecondary },
                     active && styles.dayLetterActive,
                   ]}
                 >
@@ -76,7 +86,7 @@ export function AlarmCard({
       </View>
       <View style={styles.side}>
         {locked ? (
-          <View style={styles.lockBadge}>
+          <View style={[styles.lockBadge, { backgroundColor: t.stateLocked }]}>
             <Text style={styles.lockText}>{lockLabel}</Text>
           </View>
         ) : (
@@ -85,9 +95,9 @@ export function AlarmCard({
             onValueChange={onToggle}
             trackColor={{
               true: primitives.energy[500],
-              false: primitives.ink[700],
+              false: t.border,
             }}
-            thumbColor={primitives.white}
+            thumbColor={t.textOnAccent}
           />
         )}
       </View>
@@ -106,7 +116,6 @@ export function AlarmCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: primitives.surfaceDark,
     borderRadius: 20,
     padding: 20,
     flexDirection: 'row',
@@ -121,14 +130,12 @@ const styles = StyleSheet.create({
     fontFamily: 'PlusJakartaSans_800ExtraBold',
     fontSize: 44,
     lineHeight: 48,
-    color: primitives.white,
     fontVariant: ['tabular-nums'],
   },
   meta: {
     fontFamily: 'Inter_400Regular',
     fontSize: 14,
     lineHeight: 20,
-    color: '#8A94A8',
     marginTop: 4,
   },
   days: { flexDirection: 'row', marginTop: 12, gap: 8 },
@@ -137,7 +144,6 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: primitives.ink[700],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -148,7 +154,6 @@ const styles = StyleSheet.create({
   dayLetter: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
-    color: '#8A94A8',
   },
   dayLetterActive: {
     color: primitives.white,
@@ -174,7 +179,6 @@ const styles = StyleSheet.create({
     color: primitives.white,
   },
   lockBadge: {
-    backgroundColor: primitives.warning[500],
     borderRadius: 999,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
