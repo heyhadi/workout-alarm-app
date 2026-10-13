@@ -28,10 +28,14 @@ const GRADLE_DEPS = [
   'implementation("androidx.camera:camera-core:1.3.4")',
   'implementation("androidx.camera:camera-camera2:1.3.4")',
   'implementation("androidx.camera:camera-lifecycle:1.3.4")',
-  // Explicit: CameraX's ProcessCameraProvider.getInstance() returns Guava's
-  // ListenableFuture, which must be on the compile classpath (Kotlin fails
-  // with "Cannot access class 'ListenableFuture'" without it).
-  'implementation("com.google.guava:listenablefuture:1.0.0")',
+  // Explicit full Guava: CameraX's ProcessCameraProvider.getInstance() returns
+  // Guava's ListenableFuture, which must be on the compile classpath. We use
+  // full Guava (not the standalone listenablefuture artifact) because the
+  // standalone one collides at packaging time: Guava 27.0+ transitively pulls
+  // listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (an EMPTY jar
+  // Gradle prefers by version number), and forcing the real 1.0 then causes
+  // "Duplicate class" against Guava's own bundled copy.
+  'implementation("com.google.guava:guava:33.3.1-android")',
 ];
 
 const withWorkoutAlarmPackage = (config) => {
@@ -45,8 +49,22 @@ const withWorkoutAlarmPackage = (config) => {
           `${match}\n    // Workout Alarm: CameraX + ML Kit Pose Detection (PoseModule)\n` +
           missing.map((dep) => `    ${dep}`).join('\n'),
       );
-      config.modResults.contents = contents;
     }
+    // Exclude the standalone listenablefuture artifact entirely. Full Guava
+    // (declared above) already bundles ListenableFuture; the standalone
+    // module only causes trouble — either the EMPTY 9999.0 placeholder
+    // (breaks compilation) or the real 1.0 (duplicate class at packaging).
+    const excludeBlock = `configurations.all {
+    exclude group: 'com.google.guava', module: 'listenablefuture'
+}`;
+    if (!contents.includes('module = "listenablefuture"')) {
+      contents = contents.replace(
+        /dependencies\s*\{/,
+        (match) =>
+          `// Workout Alarm: full Guava provides ListenableFuture; drop the standalone module.\n${excludeBlock}\n\n${match}`,
+      );
+    }
+    config.modResults.contents = contents;
     return config;
   });
 

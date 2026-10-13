@@ -15,6 +15,11 @@ import {
   stopPoseDetection,
 } from '../native/pose';
 import { isRingingModuleAvailable, releaseAlarm } from '../native/ringing';
+import {
+  enterLockTask,
+  exitLockTask,
+  isLockdownModuleAvailable,
+} from '../native/lockdown';
 import { getAlarm, recordSession } from '../storage/db';
 import { incrementTotalWorkouts } from '../storage/settings';
 import { EXERCISE_LABELS } from '../components/ExerciseChip';
@@ -64,6 +69,17 @@ export default function RingingScreen() {
     }
   }, [permission, requestPermission]);
 
+  // Engage lock-task (kiosk) mode while the workout is active: Back/Home/
+  // recents are swallowed and the ringing screen stays on top. Released
+  // together with the alarm. First call shows a one-time OS prompt.
+  useEffect(() => {
+    if (!isLockdownModuleAvailable()) return;
+    enterLockTask().catch(() => undefined);
+    return () => {
+      exitLockTask().catch(() => undefined);
+    };
+  }, []);
+
   // Release exactly once: stop sound, log the session, go to Done.
   // Stable across renders (refs + router only) so effects can depend on it.
   const release = useCallback(
@@ -74,6 +90,9 @@ export default function RingingScreen() {
       const startedAt = startedAtRef.current || finishedAt;
       const durationMs = finishedAt - startedAt;
       try {
+        if (isLockdownModuleAvailable()) {
+          await exitLockTask().catch(() => undefined);
+        }
         if (isRingingModuleAvailable()) {
           await releaseAlarm(alarmRef.current.id, repsDone, durationMs);
         }
