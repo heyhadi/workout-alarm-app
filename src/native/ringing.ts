@@ -32,6 +32,11 @@ interface RingingModuleSpec {
     exercise: ExerciseType;
     repTarget: number;
   } | null>;
+  getActiveRinging(): Promise<{
+    alarmId: string;
+    exercise: ExerciseType;
+    repTarget: number;
+  } | null>;
 }
 
 export interface StartRingingInput {
@@ -76,6 +81,19 @@ export async function getRingingIntent(): Promise<{
   repTarget: number;
 } | null> {
   return spec().getRingingIntent();
+}
+
+/**
+ * Fallback: asks the ringing service directly what it is ringing for,
+ * without depending on the Activity intent. Catches cases where the
+ * intent was missed (e.g. consumed before JS read it).
+ */
+export async function getActiveRinging(): Promise<{
+  alarmId: string;
+  exercise: ExerciseType;
+  repTarget: number;
+} | null> {
+  return spec().getActiveRinging();
 }
 
 /** Subscribe to `onAlarmReleased` (authoritative release payload). */
