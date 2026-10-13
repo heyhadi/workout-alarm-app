@@ -147,9 +147,11 @@ export default function RingingScreen() {
             setCue(
               p.reason === 'no_body'
                 ? 'Get back in frame'
-                : p.reason === 'low_light'
-                  ? 'Too dark — move to light'
-                  : 'Camera issue — keep going',
+                : p.reason === 'partial_body'
+                  ? 'Step back — full body must be visible'
+                  : p.reason === 'low_light'
+                    ? 'Too dark — move to light'
+                    : 'Camera issue — keep going',
             );
           });
         })
@@ -294,7 +296,7 @@ const styles = StyleSheet.create({
   ring: { marginVertical: space.lg },
   cameraWrap: {
     width: '100%',
-    height: 180,
+    height: 280,
     borderRadius: 16,
     overflow: 'hidden',
   },
