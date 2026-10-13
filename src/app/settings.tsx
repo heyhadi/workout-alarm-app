@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
@@ -16,12 +16,78 @@ import {
 import { STEPS_PER_REP } from '../native/steps';
 import type { EmergencyExitMode, StrictnessLevel } from '../types';
 
+const LOCK_IN_OPTIONS = [15, 30, 45, 60];
+
 function SectionTitle({ children }: { children: string }) {
   const t = getSemanticTokens('day');
   return (
     <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
       {children}
     </Text>
+  );
+}
+
+/** One card, hairline-separated rows — every section on this screen uses it. */
+function Group({ children }: { children: ReactNode }) {
+  const t = getSemanticTokens('day');
+  return (
+    <View
+      style={[styles.group, { backgroundColor: t.bgSurface, borderColor: t.border }]}
+    >
+      {children}
+    </View>
+  );
+}
+
+interface Choice<T> {
+  value: T;
+  title: string;
+  detail?: string;
+}
+
+/** Single choice: rows in a Group, an orange check on the selected one. */
+function ChoiceGroup<T extends string>({
+  choices,
+  selected,
+  onSelect,
+}: {
+  choices: Choice<T>[];
+  selected: T;
+  onSelect: (value: T) => void;
+}) {
+  const t = getSemanticTokens('day');
+  return (
+    <Group>
+      {choices.map((choice, index) => {
+        const isSelected = choice.value === selected;
+        return (
+          <Pressable
+            key={choice.value}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: isSelected }}
+            onPress={() => onSelect(choice.value)}
+            style={[
+              styles.row,
+              index > 0 && [styles.divider, { borderTopColor: t.border }],
+            ]}
+          >
+            <View style={styles.rowMain}>
+              <Text style={[typeScale.label, { color: t.textPrimary }]}>
+                {choice.title}
+              </Text>
+              {choice.detail ? (
+                <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
+                  {choice.detail}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={[typeScale.heading, styles.check, { color: t.actionPrimary }]}>
+              {isSelected ? '✓' : ''}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </Group>
   );
 }
 
@@ -44,167 +110,133 @@ export default function SettingsScreen() {
     () => getSettings().emergencyExit,
   );
   const [lockIn, setLockIn] = useState(() => getSettings().lockInMinutes);
-  const pick =
-    <T,>(current: T, set: (v: T) => void, persist: (v: T) => void) =>
-    (v: T) => {
-      set(v);
-      persist(v);
-    };
+
+  const s = strings.settings;
+  const hasReadiness = items !== null && items.length > 0;
+  const readinessColor = !hasReadiness
+    ? primitives.warning[500]
+    : pending === 0
+      ? primitives.success[500]
+      : primitives.danger[500];
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[typeScale.display, { color: t.textPrimary, fontSize: 32 }]}>
-          {strings.settings.title}
+          {s.title}
         </Text>
 
-        <SectionTitle>{strings.settings.language}</SectionTitle>
-        <View
-          style={[
-            styles.group,
-            { backgroundColor: t.bgSurface, borderColor: t.border },
+        <SectionTitle>{s.language}</SectionTitle>
+        <ChoiceGroup<LanguageSetting>
+          selected={language}
+          onSelect={setLanguage}
+          choices={[
+            {
+              value: 'system',
+              title: s.languageOptions.system,
+              detail: s.languageOptions[systemLanguage()],
+            },
+            { value: 'en', title: s.languageOptions.en },
+            { value: 'id', title: s.languageOptions.id },
           ]}
-        >
-          {(['system', 'en', 'id'] as LanguageSetting[]).map((option, index) => {
-            const selected = language === option;
-            return (
-              <Pressable
-                key={option}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selected }}
-                onPress={() => setLanguage(option)}
-                style={[
-                  styles.groupRow,
-                  index > 0 && { borderTopWidth: 1, borderTopColor: t.border },
-                ]}
-              >
-                <View style={styles.rowMain}>
-                  <Text style={[typeScale.label, { color: t.textPrimary }]}>
-                    {strings.settings.languageOptions[option]}
-                  </Text>
-                  {option === 'system' && (
-                    <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-                      {strings.settings.languageOptions[systemLanguage()]}
-                    </Text>
-                  )}
-                </View>
-                {selected && (
-                  <Text style={[typeScale.heading, { color: t.actionPrimary }]}>✓</Text>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
+        />
 
-        <SectionTitle>{strings.settings.readiness}</SectionTitle>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/readiness')}
-          style={[styles.card, { backgroundColor: t.bgSurface, borderColor: t.border }]}
-        >
-          <View
-            style={[
-              styles.dot,
-              {
-                backgroundColor:
-                  items === null || items.length === 0
-                    ? primitives.warning[500]
-                    : pending === 0
-                      ? primitives.success[500]
-                      : primitives.danger[500],
-              },
-            ]}
-          />
-          <View style={styles.rowMain}>
-            <Text style={[typeScale.label, { color: t.textPrimary }]}>
-              {items && items.length > 0 && pending === 0
-                ? strings.settings.ready
-                : items && items.length > 0
-                  ? strings.settings.toFix(pending)
-                  : strings.settings.devBuild}
-            </Text>
-            <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-              {strings.settings.readinessBody}
-            </Text>
-          </View>
-        </Pressable>
-
-        <SectionTitle>{strings.settings.strictness}</SectionTitle>
-        {(['standard', 'maximum'] as StrictnessLevel[]).map((level) => (
+        <SectionTitle>{s.readiness}</SectionTitle>
+        <Group>
           <Pressable
-            key={level}
-            onPress={() => pick(strictness, setStrictnessState, setStrictness)(level)}
-            style={[
-              styles.option,
-              {
-                backgroundColor: t.bgSurface,
-                borderColor: strictness === level ? t.actionPrimary : t.border,
-              },
-            ]}
+            accessibilityRole="button"
+            onPress={() => router.push('/readiness')}
+            style={styles.row}
           >
-            <Text style={[typeScale.label, { color: t.textPrimary }]}>
-              {strings.settings.strictnessOptions[level].title}
-            </Text>
-            <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-              {strings.settings.strictnessOptions[level].detail}
+            <View style={[styles.dot, { backgroundColor: readinessColor }]} />
+            <View style={styles.rowMain}>
+              <Text style={[typeScale.label, { color: t.textPrimary }]}>
+                {!hasReadiness
+                  ? s.devBuild
+                  : pending === 0
+                    ? s.ready
+                    : s.toFix(pending)}
+              </Text>
+              <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
+                {s.readinessBody}
+              </Text>
+            </View>
+            <Text style={[typeScale.heading, styles.check, { color: t.textSecondary }]}>
+              ›
             </Text>
           </Pressable>
-        ))}
+        </Group>
 
-        <SectionTitle>{strings.settings.emergency}</SectionTitle>
-        {(['none', 'slow'] as EmergencyExitMode[]).map((mode) => (
-          <Pressable
-            key={mode}
-            onPress={() =>
-              pick(emergencyExit, setEmergencyExitState, setEmergencyExit)(mode)
-            }
-            style={[
-              styles.option,
-              {
-                backgroundColor: t.bgSurface,
-                borderColor: emergencyExit === mode ? t.actionPrimary : t.border,
-              },
-            ]}
-          >
-            <Text style={[typeScale.label, { color: t.textPrimary }]}>
-              {strings.settings.emergencyOptions[mode].title}
-            </Text>
-            <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-              {strings.settings.emergencyOptions[mode].detail}
-            </Text>
-          </Pressable>
-        ))}
+        <SectionTitle>{s.strictness}</SectionTitle>
+        <ChoiceGroup<StrictnessLevel>
+          selected={strictness}
+          onSelect={(level) => {
+            setStrictnessState(level);
+            setStrictness(level);
+          }}
+          choices={(['standard', 'maximum'] as StrictnessLevel[]).map((level) => ({
+            value: level,
+            ...s.strictnessOptions[level],
+          }))}
+        />
+
+        <SectionTitle>{s.emergency}</SectionTitle>
+        <ChoiceGroup<EmergencyExitMode>
+          selected={emergencyExit}
+          onSelect={(mode) => {
+            setEmergencyExitState(mode);
+            setEmergencyExit(mode);
+          }}
+          choices={(['none', 'slow'] as EmergencyExitMode[]).map((mode) => ({
+            value: mode,
+            ...s.emergencyOptions[mode],
+          }))}
+        />
 
         <SectionTitle>{strings.form.backup}</SectionTitle>
-        <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-          {strings.form.backupBody(STEPS_PER_REP)}
-        </Text>
-
-        <SectionTitle>{strings.settings.lockIn}</SectionTitle>
-        <View style={styles.rowWrap}>
-          {[15, 30, 45, 60].map((mins) => (
-            <Pressable
-              key={mins}
-              onPress={() => pick(lockIn, setLockIn, setLockInMinutes)(mins)}
-              style={[
-                styles.mini,
-                {
-                  backgroundColor: lockIn === mins ? t.stateLocked : t.bgSurface,
-                  borderColor: t.border,
-                },
-              ]}
+        <Group>
+          <View style={styles.row}>
+            <Text
+              style={[typeScale.bodySmall, styles.rowMain, { color: t.textSecondary }]}
             >
-              <Text
-                style={[
-                  typeScale.bodySmall,
-                  { color: lockIn === mins ? t.textOnAccent : t.textPrimary },
-                ]}
-              >
-                {strings.form.minutes(mins)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+              {strings.form.backupBody(STEPS_PER_REP)}
+            </Text>
+          </View>
+        </Group>
+
+        <SectionTitle>{s.lockIn}</SectionTitle>
+        <Group>
+          <View style={styles.segments}>
+            {LOCK_IN_OPTIONS.map((mins, index) => {
+              const isSelected = lockIn === mins;
+              return (
+                <Pressable
+                  key={mins}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: isSelected }}
+                  onPress={() => {
+                    setLockIn(mins);
+                    setLockInMinutes(mins);
+                  }}
+                  style={[
+                    styles.segment,
+                    index > 0 && [styles.segmentDivider, { borderLeftColor: t.border }],
+                    isSelected && { backgroundColor: primitives.energy[50] },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      isSelected ? typeScale.label : typeScale.bodySmall,
+                      { color: isSelected ? primitives.energy[600] : t.textPrimary },
+                    ]}
+                  >
+                    {strings.form.minutes(mins)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Group>
       </ScrollView>
     </Screen>
   );
@@ -213,39 +245,25 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   scroll: { paddingBottom: space.xl },
   section: { marginTop: space.lg, marginBottom: space.sm },
-  card: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: space.md,
-    marginBottom: space.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  // Selectable option: title above its description.
-  option: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: space.md,
-    marginBottom: space.sm,
-    gap: space.xs,
-  },
-  // Grouped list (language): one card, hairline-separated rows.
   group: { borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
-  groupRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space.md,
-    paddingVertical: space.sm,
+    paddingVertical: space.sm + 2,
     minHeight: 56,
+    gap: space.md,
   },
-  dot: { width: 12, height: 12, borderRadius: 6, marginRight: space.md },
+  divider: { borderTopWidth: 1 },
   rowMain: { flex: 1 },
-  rowWrap: { flexDirection: 'row', flexWrap: 'wrap' },
-  mini: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    marginRight: space.sm,
+  check: { width: 20, textAlign: 'center' },
+  dot: { width: 12, height: 12, borderRadius: 6 },
+  segments: { flexDirection: 'row' },
+  segment: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  segmentDivider: { borderLeftWidth: 1 },
 });
