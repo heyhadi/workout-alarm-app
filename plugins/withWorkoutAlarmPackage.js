@@ -18,6 +18,7 @@ const { copyKotlinSources } = require('./lib');
 
 const KOTLIN_FILES = [
   'com/workoutalarm/app/pose/PoseModule.kt',
+  'com/workoutalarm/app/pose/PoseCameraViewManager.kt',
   'com/workoutalarm/app/pose/WorkoutAlarmPackage.kt',
 ];
 
@@ -28,6 +29,7 @@ const GRADLE_DEPS = [
   'implementation("androidx.camera:camera-core:1.6.2")',
   'implementation("androidx.camera:camera-camera2:1.6.2")',
   'implementation("androidx.camera:camera-lifecycle:1.6.2")',
+  'implementation("androidx.camera:camera-view:1.6.2")',
   // Explicit full Guava: CameraX's ProcessCameraProvider.getInstance() returns
   // Guava's ListenableFuture, which must be on the compile classpath. We use
   // full Guava (not the standalone listenablefuture artifact) because the
