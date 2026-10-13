@@ -145,7 +145,15 @@ class PoseModule(reactContext: ReactApplicationContext) :
         } else {
           lastPoseMs = now
           poseLostEmitted = false
-          val angle = jointAngleForExercise(pose, exercise) ?: return@addOnSuccessListener
+          val angle = jointAngleForExercise(pose, exercise)
+          if (angle == null) {
+            // Body visible but the joints this exercise needs are cut off
+            // (e.g. feet out of frame for squats) — tell the user to adjust
+            // instead of silently counting nothing.
+            onJointsMissing(now)
+            return@addOnSuccessListener
+          }
+          jointsMissingEmitted = false
           feedAngle(angle, now)
         }
       }
@@ -163,6 +171,20 @@ class PoseModule(reactContext: ReactApplicationContext) :
       poseLostEmitted = true
       emit("onPoseLost", Arguments.createMap().apply {
         putString("reason", "no_body")
+      })
+    }
+  }
+
+  private var jointsMissingEmitted = false
+  private var lastJointsMissingMs: Long = 0L
+
+  private fun onJointsMissing(now: Long) {
+    // Throttle: remind every few seconds, don't spam the cue banner.
+    if (!jointsMissingEmitted || now - lastJointsMissingMs > 4000L) {
+      jointsMissingEmitted = true
+      lastJointsMissingMs = now
+      emit("onPoseLost", Arguments.createMap().apply {
+        putString("reason", "partial_body")
       })
     }
   }
