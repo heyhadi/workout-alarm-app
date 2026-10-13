@@ -1,15 +1,11 @@
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { useTokens } from '../appearance';
-import {
-  components,
-  elevation,
-  primitives,
-  space,
-  type as typeScale,
-} from '../../theme/tokens';
+import { primitives, space } from '../../theme/tokens';
 import type { Alarm } from '../types';
-import { useStrings } from '../i18n';
+import { EXERCISE_LABELS } from './ExerciseChip';
+
+/** Indonesian day initials, Sunday-first to match JS Date.getDay(). */
+const DAY_LETTERS = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
 
 interface AlarmCardProps {
   alarm: Alarm;
@@ -22,8 +18,8 @@ interface AlarmCardProps {
 }
 
 /**
- * One alarm row: big tabular time, exercise + reps + days beneath,
- * toggle on the right — or a "Locked" badge inside the lock-in window.
+ * Dark alarm card for the home screen: big tabular time, toggle on the
+ * right, exercise + rep target beneath, Indonesian day-of-week dots.
  * Swipe left to reveal delete (disabled while locked: no dodging the
  * workout by deleting inside the lock-in window).
  */
@@ -35,19 +31,14 @@ export function AlarmCard({
   onPress,
   onDelete,
 }: AlarmCardProps) {
-  const t = useTokens('day');
-  const strings = useStrings();
-
   const renderRightActions = () => (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={strings.card.deleteLabel(alarm.time)}
+      accessibilityLabel={`Delete alarm ${alarm.time}`}
       onPress={onDelete}
-      style={[styles.deleteAction, { backgroundColor: t.stateDanger }]}
+      style={styles.deleteAction}
     >
-      <Text style={[styles.deleteLabel, { color: t.textOnAccent }]}>
-        {strings.card.delete}
-      </Text>
+      <Text style={styles.deleteLabel}>Delete</Text>
     </Pressable>
   );
 
@@ -55,40 +46,25 @@ export function AlarmCard({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[styles.card, { backgroundColor: t.bgSurface }, elevation[1]]}
+      style={[styles.card, !alarm.enabled && styles.cardDisabled]}
     >
       <View style={styles.main}>
-        <Text
-          style={[
-            typeScale.display,
-            { color: t.textPrimary, fontSize: 32, lineHeight: 36 },
-          ]}
-        >
-          {alarm.time}
-        </Text>
-        <Text
-          style={[typeScale.bodySmall, { color: t.textSecondary, marginTop: space.xs }]}
-        >
-          {`${strings.exercise[alarm.exercise]} · ${strings.card.reps(alarm.repTarget)}`}
+        <Text style={styles.time}>{alarm.time}</Text>
+        <Text style={styles.meta}>
+          {`${EXERCISE_LABELS[alarm.exercise]} · ${alarm.repTarget} rep`}
         </Text>
         <View style={styles.days}>
-          {strings.dayLetters.map((letter, i) => {
+          {DAY_LETTERS.map((letter, i) => {
             const active = alarm.days.includes(i);
             return (
               <View
                 key={i}
-                style={[
-                  styles.dayDot,
-                  {
-                    backgroundColor: active ? t.actionPrimary : 'transparent',
-                    borderColor: t.border,
-                  },
-                ]}
+                style={[styles.dayDot, active && styles.dayDotActive]}
               >
                 <Text
                   style={[
                     styles.dayLetter,
-                    { color: active ? t.textOnAccent : t.textSecondary },
+                    active && styles.dayLetterActive,
                   ]}
                 >
                   {letter}
@@ -100,17 +76,18 @@ export function AlarmCard({
       </View>
       <View style={styles.side}>
         {locked ? (
-          <View style={[styles.lockBadge, { backgroundColor: t.stateLocked }]}>
-            <Text style={[styles.lockText, { color: t.textOnAccent }]}>
-              {lockLabel}
-            </Text>
+          <View style={styles.lockBadge}>
+            <Text style={styles.lockText}>{lockLabel}</Text>
           </View>
         ) : (
           <Switch
             value={alarm.enabled}
             onValueChange={onToggle}
-            trackColor={{ true: primitives.energy[500], false: t.border }}
-            thumbColor={t.textOnAccent}
+            trackColor={{
+              true: primitives.energy[500],
+              false: primitives.ink[700],
+            }}
+            thumbColor={primitives.white}
           />
         )}
       </View>
@@ -129,26 +106,61 @@ export function AlarmCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: components.alarmCard.borderRadius,
-    padding: components.alarmCard.padding,
+    backgroundColor: primitives.surfaceDark,
+    borderRadius: 20,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: space.md,
   },
+  cardDisabled: {
+    opacity: 0.55,
+  },
   main: { flex: 1 },
-  days: { flexDirection: 'row', marginTop: space.sm, gap: 4 },
+  time: {
+    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontSize: 44,
+    lineHeight: 48,
+    color: primitives.white,
+    fontVariant: ['tabular-nums'],
+  },
+  meta: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8A94A8',
+    marginTop: 4,
+  },
+  days: { flexDirection: 'row', marginTop: 12, gap: 8 },
   dayDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
+    borderColor: primitives.ink[700],
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayLetter: { fontSize: 11, fontFamily: typeScale.label.fontFamily },
-  side: { marginLeft: space.md, alignItems: 'flex-end', justifyContent: 'center' },
+  dayDotActive: {
+    backgroundColor: primitives.energy[500],
+    borderColor: primitives.energy[500],
+  },
+  dayLetter: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#8A94A8',
+  },
+  dayLetterActive: {
+    color: primitives.white,
+  },
+  side: {
+    marginLeft: space.md,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   deleteAction: {
-    borderRadius: components.alarmCard.borderRadius,
+    backgroundColor: primitives.danger[500],
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'flex-end',
     paddingHorizontal: space.lg,
@@ -156,11 +168,20 @@ const styles = StyleSheet.create({
     marginLeft: space.sm,
     minWidth: 96,
   },
-  deleteLabel: { fontSize: 16, fontFamily: typeScale.label.fontFamily },
+  deleteLabel: {
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+    color: primitives.white,
+  },
   lockBadge: {
+    backgroundColor: primitives.warning[500],
     borderRadius: 999,
     paddingHorizontal: space.sm,
     paddingVertical: space.xs,
   },
-  lockText: { fontSize: 12, fontFamily: typeScale.label.fontFamily },
+  lockText: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    color: primitives.white,
+  },
 });
