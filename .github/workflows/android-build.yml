@@ -1,6 +1,6 @@
 name: Android APK
 
-# Builds a debug APK straight from the repo — no EAS quota involved.
+# Builds a signed release APK straight from the repo — no EAS quota involved.
 # Runs on every push to main that touches app code, and manually.
 on:
   push:
@@ -38,15 +38,23 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/workout-alarm.p12
+
       - name: Expo prebuild (generate android/ with config plugins)
         run: npx expo prebuild --platform android --clean
         env:
           CI: 1
+          WORKOUT_ALARM_KEYSTORE_FILE: /tmp/workout-alarm.p12
+          WORKOUT_ALARM_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          WORKOUT_ALARM_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          WORKOUT_ALARM_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Build debug APK
+      - name: Build release APK
         run: |
           chmod +x android/gradlew
-          cd android && ./gradlew assembleDebug --no-daemon
+          cd android && ./gradlew assembleRelease --no-daemon
         env:
           CI: 1
           GRADLE_OPTS: -Dorg.gradle.daemon=false
@@ -54,6 +62,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: workout-alarm-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: workout-alarm-release
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 14
