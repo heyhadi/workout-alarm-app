@@ -31,10 +31,6 @@ interface AlarmFormProps {
   onSubmit: (value: AlarmFormValue) => void;
 }
 
-function isValidTime(value: string): boolean {
-  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
-}
-
 /**
  * Screen 2 — Create / edit alarm form.
  * Time, repeat days, exercise picker (chips), rep presets, difficulty,
@@ -101,6 +97,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
           mode="time"
           is24Hour
           display="default"
+          minuteInterval={1}
           onChange={handleTimeChange}
         />
       )}
