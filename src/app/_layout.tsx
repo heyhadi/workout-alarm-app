@@ -12,7 +12,12 @@ import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { initDatabase } from '../storage/db';
-import { getActiveRinging, getRingingIntent, isRingingModuleAvailable } from '../native/ringing';
+import {
+  addRingingIntentListener,
+  getActiveRinging,
+  getRingingIntent,
+  isRingingModuleAvailable,
+} from '../native/ringing';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,24 +46,35 @@ export default function RootLayout() {
   // ringing service directly, in case the intent was missed.
   useEffect(() => {
     if (!isRingingModuleAvailable()) return;
+    const routeToRinging = (intent: {
+      alarmId: string;
+      exercise: string;
+      repTarget: number;
+    } | null) => {
+      if (intent) {
+        router.replace({
+          pathname: '/ringing',
+          params: { alarmId: intent.alarmId },
+        });
+      }
+    };
     const checkRingingIntent = () => {
       getRingingIntent()
         .then((intent) => intent ?? getActiveRinging())
-        .then((intent) => {
-          if (intent) {
-            router.replace({
-              pathname: '/ringing',
-              params: { alarmId: intent.alarmId },
-            });
-          }
-        })
+        .then(routeToRinging)
         .catch(() => undefined);
     };
     checkRingingIntent();
-    const sub = AppState.addEventListener('change', (state) => {
+    const appStateSub = AppState.addEventListener('change', (state) => {
       if (state === 'active') checkRingingIntent();
     });
-    return () => sub.remove();
+    // Fired by MainActivity.onNewIntent when the alarm arrives while the
+    // app is already alive — AppState won't change if we're foregrounded.
+    const intentSub = addRingingIntentListener(checkRingingIntent);
+    return () => {
+      appStateSub.remove();
+      intentSub();
+    };
   }, [router]);
 
   useEffect(() => {
