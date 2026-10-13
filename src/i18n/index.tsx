@@ -23,6 +23,11 @@ function deviceLocale(): string | undefined {
   }
 }
 
+/** The language "follow the phone" currently resolves to. */
+export function systemLanguage(): Language {
+  return resolveLanguage('system', deviceLocale());
+}
+
 /** Strings outside React (e.g. the error boundary). */
 export function getStrings(): Strings {
   return STRINGS[resolveLanguage(getLanguageSetting(), deviceLocale())];

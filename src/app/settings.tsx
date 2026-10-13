@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
-import { useLanguageSetting, useStrings } from '../i18n';
+import { systemLanguage, useLanguageSetting, useStrings } from '../i18n';
 import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import {
@@ -59,31 +59,41 @@ export default function SettingsScreen() {
         </Text>
 
         <SectionTitle>{strings.settings.language}</SectionTitle>
-        <View style={styles.rowWrap}>
-          {(['system', 'en', 'id'] as LanguageSetting[]).map((option) => (
-            <Pressable
-              key={option}
-              accessibilityRole="button"
-              accessibilityState={{ selected: language === option }}
-              onPress={() => setLanguage(option)}
-              style={[
-                styles.mini,
-                {
-                  backgroundColor: language === option ? t.actionPrimary : t.bgSurface,
-                  borderColor: t.border,
-                },
-              ]}
-            >
-              <Text
+        <View
+          style={[
+            styles.group,
+            { backgroundColor: t.bgSurface, borderColor: t.border },
+          ]}
+        >
+          {(['system', 'en', 'id'] as LanguageSetting[]).map((option, index) => {
+            const selected = language === option;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                onPress={() => setLanguage(option)}
                 style={[
-                  typeScale.bodySmall,
-                  { color: language === option ? t.textOnAccent : t.textPrimary },
+                  styles.groupRow,
+                  index > 0 && { borderTopWidth: 1, borderTopColor: t.border },
                 ]}
               >
-                {strings.settings.languageOptions[option]}
-              </Text>
-            </Pressable>
-          ))}
+                <View style={styles.rowMain}>
+                  <Text style={[typeScale.label, { color: t.textPrimary }]}>
+                    {strings.settings.languageOptions[option]}
+                  </Text>
+                  {option === 'system' && (
+                    <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
+                      {strings.settings.languageOptions[systemLanguage()]}
+                    </Text>
+                  )}
+                </View>
+                {selected && (
+                  <Text style={[typeScale.heading, { color: t.actionPrimary }]}>✓</Text>
+                )}
+              </Pressable>
+            );
+          })}
         </View>
 
         <SectionTitle>{strings.settings.readiness}</SectionTitle>
@@ -218,6 +228,15 @@ const styles = StyleSheet.create({
     padding: space.md,
     marginBottom: space.sm,
     gap: space.xs,
+  },
+  // Grouped list (language): one card, hairline-separated rows.
+  group: { borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
+  groupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    minHeight: 56,
   },
   dot: { width: 12, height: 12, borderRadius: 6, marginRight: space.md },
   rowMain: { flex: 1 },
