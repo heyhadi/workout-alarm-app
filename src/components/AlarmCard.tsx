@@ -1,18 +1,14 @@
-import { Pressable, StyleSheet, Switch, Text, View, useColorScheme } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
+import { useStrings } from '../i18n';
 import { primitives, space } from '../../theme/tokens';
 import type { Alarm } from '../types';
-import { EXERCISE_LABELS } from './ExerciseChip';
-
-/** Indonesian day initials, Sunday-first to match JS Date.getDay(). */
-const DAY_LETTERS = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
 
 interface AlarmCardProps {
   alarm: Alarm;
   /** True while inside the lock-in window: toggle replaced by a badge. */
   locked: boolean;
-  lockLabel: string;
   onToggle: (enabled: boolean) => void;
   onPress: () => void;
   onDelete: () => void;
@@ -20,21 +16,20 @@ interface AlarmCardProps {
 
 /**
  * Alarm card for the home screen: big tabular time, toggle on the right,
- * exercise + rep target beneath, Indonesian day-of-week dots.
- * Follows the system theme (dark = alarm tokens, light = day tokens).
+ * exercise + rep target beneath, day-of-week dots.
+ * Follows the system theme via useTokens(); labels via useStrings().
  * Swipe left to reveal delete (disabled while locked: no dodging the
  * workout by deleting inside the lock-in window).
  */
 export function AlarmCard({
   alarm,
   locked,
-  lockLabel,
   onToggle,
   onPress,
   onDelete,
 }: AlarmCardProps) {
-  const scheme = useColorScheme();
-  const t = getSemanticTokens(scheme === 'dark' ? 'alarm' : 'day');
+  const t = useTokens();
+  const s = useStrings();
 
   const renderRightActions = () => (
     <Pressable
@@ -51,15 +46,21 @@ export function AlarmCard({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[styles.card, { backgroundColor: t.bgSurface }, !alarm.enabled && styles.cardDisabled]}
+      style={[
+        styles.card,
+        { backgroundColor: t.bgSurface },
+        !alarm.enabled && styles.cardDisabled,
+      ]}
     >
       <View style={styles.main}>
-        <Text style={[styles.time, { color: t.textPrimary }]}>{alarm.time}</Text>
+        <Text style={[styles.time, { color: t.textPrimary }]}>
+          {alarm.time}
+        </Text>
         <Text style={[styles.meta, { color: t.textSecondary }]}>
-          {`${EXERCISE_LABELS[alarm.exercise]} · ${alarm.repTarget} rep`}
+          {`${s.exercise[alarm.exercise]} · ${alarm.repTarget} rep`}
         </Text>
         <View style={styles.days}>
-          {DAY_LETTERS.map((letter, i) => {
+          {s.dayLetters.map((letter, i) => {
             const active = alarm.days.includes(i);
             return (
               <View
@@ -87,7 +88,7 @@ export function AlarmCard({
       <View style={styles.side}>
         {locked ? (
           <View style={[styles.lockBadge, { backgroundColor: t.stateLocked }]}>
-            <Text style={styles.lockText}>{lockLabel}</Text>
+            <Text style={styles.lockText}>{s.alarms.locked(alarm.time)}</Text>
           </View>
         ) : (
           <Switch
