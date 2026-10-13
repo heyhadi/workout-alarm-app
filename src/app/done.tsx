@@ -51,7 +51,8 @@ export default function DoneScreen() {
   const durationMs = Number(params.durationMs) || 0;
   const [finishedAt] = useState(() => Number(params.finishedAt) || Date.now());
   // Synchronous store reads belong in lazy initializers, not effects.
-  const [total] = useState(() => getTotalWorkouts());
+  const [savedTotal] = useState(() => getTotalWorkouts());
+  const [unsaved, setUnsaved] = useState(false);
   const [streak, setStreak] = useState(0);
   const [exercise, setExercise] = useState<ExerciseType | null>(null);
   const [week, setWeek] = useState<boolean[]>(() => Array(7).fill(false));
@@ -81,11 +82,15 @@ export default function DoneScreen() {
         currentStreakDays().catch(() => 0),
       ]);
       if (cancelled) return;
-      setStreak(days);
       const days7 = weekDone(sessions, finishedAt);
-      // This morning is done the moment you're here — even if the save lagged.
-      if (!wasSkipped) days7[new Date(finishedAt).getDay()] = true;
+      const todayIndex = new Date(finishedAt).getDay();
+      // This morning counts the moment you're here — even if the save
+      // hasn't landed yet: fill today, and add it to streak and total.
+      const missingToday = !wasSkipped && !days7[todayIndex];
+      if (!wasSkipped) days7[todayIndex] = true;
       setWeek(days7);
+      setStreak(days + (missingToday ? 1 : 0));
+      setUnsaved(missingToday);
       if (alarm) {
         setExercise(alarm.exercise);
         if (!wasSkipped) {
@@ -203,7 +208,7 @@ export default function DoneScreen() {
               {s.streak(streak)}
             </Text>
             <Text style={[typeScale.bodySmall, { color: t.accentStrong }]}>
-              {s.total(total)}
+              {s.total(savedTotal + (unsaved ? 1 : 0))}
             </Text>
           </View>
           <View style={styles.week}>
