@@ -172,11 +172,45 @@ class RingingModule(reactContext: ReactApplicationContext) :
     } else {
       true
     }
+    // Lets the ringing service open the workout over whatever app is in use.
+    val overlay = Settings.canDrawOverlays(context)
     promise.resolve(Arguments.createMap().apply {
+      putBoolean("overlay", overlay)
       putBoolean("notifications", notifications)
       putBoolean("fullScreen", fullScreen)
       putBoolean("exactAlarms", exactAlarms)
     })
+  }
+
+  /**
+   * Open the page for "Display over other apps". On Xiaomi (MIUI/HyperOS)
+   * open its own permission editor instead: it holds both that switch and
+   * "Display pop-up windows while running in the background", which
+   * HyperOS also requires and leaves off by default.
+   */
+  @ReactMethod
+  fun openOverlaySettings(promise: Promise) {
+    val context = reactApplicationContext
+    val pkg = context.packageName
+    val xiaomi = Intent("miui.intent.action.APP_PERM_EDITOR")
+      .setClassName(
+        "com.miui.securitycenter",
+        "com.miui.permcenter.permissions.PermissionsEditorActivity"
+      )
+      .putExtra("extra_pkgname", pkg)
+      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val standard = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+      .setData(Uri.parse("package:$pkg"))
+      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val isXiaomi = Build.MANUFACTURER.equals("xiaomi", ignoreCase = true)
+    for (intent in if (isXiaomi) listOf(xiaomi, standard) else listOf(standard)) {
+      try {
+        context.startActivity(intent)
+        promise.resolve(null)
+        return
+      } catch (_: Exception) { }
+    }
+    promise.reject("SETTINGS_FAILED", "Couldn't open the permission settings")
   }
 
   /** Open the system page where the user can allow full-screen alarms. */

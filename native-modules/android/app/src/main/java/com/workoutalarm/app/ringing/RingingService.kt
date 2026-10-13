@@ -72,6 +72,7 @@ class RingingService : Service() {
     soundUri = intent?.getStringExtra(AlarmReceiver.EXTRA_SOUND_URI)?.let(Uri::parse)
     currentRinging = RingingInfo(alarmId, exercise, repTarget)
     startForeground(NOTIFICATION_ID, buildNotification(alarmId, exercise, repTarget))
+    launchWorkoutScreen(alarmId, exercise, repTarget)
     startSound()
     startVibration()
     watchdog.removeCallbacks(watchdogTask)
@@ -92,17 +93,33 @@ class RingingService : Service() {
     manager.createNotificationChannel(channel)
   }
 
-  private fun buildNotification(alarmId: String, exercise: String, repTarget: Int): Notification {
-    // Full-screen intent: MainActivity opens over the lock screen.
-    val ringingIntent = Intent(this, MainActivity::class.java).apply {
+  private fun ringingIntent(alarmId: String, exercise: String, repTarget: Int) =
+    Intent(this, MainActivity::class.java).apply {
       action = ACTION_RINGING
       putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
       putExtra(AlarmReceiver.EXTRA_EXERCISE, exercise)
       putExtra(AlarmReceiver.EXTRA_REP_TARGET, repTarget)
       addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
     }
+
+  /**
+   * Take over the screen even while the phone is unlocked and in use. The
+   * full-screen intent alone only takes over a locked/off screen — in use,
+   * Android shows a heads-up notification instead. A direct start is
+   * allowed once the user grants "Display over other apps" (and, on Xiaomi
+   * HyperOS, "Display pop-up windows while running in the background");
+   * without them it's blocked and the notification remains the way in.
+   */
+  private fun launchWorkoutScreen(alarmId: String, exercise: String, repTarget: Int) {
+    try {
+      startActivity(ringingIntent(alarmId, exercise, repTarget))
+    } catch (_: Exception) { }
+  }
+
+  private fun buildNotification(alarmId: String, exercise: String, repTarget: Int): Notification {
+    // Full-screen intent: MainActivity opens over the lock screen.
     val fullScreenPending = PendingIntent.getActivity(
-      this, 0, ringingIntent,
+      this, 0, ringingIntent(alarmId, exercise, repTarget),
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
     return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -113,6 +130,8 @@ class RingingService : Service() {
       .setOngoing(true)
       .setAutoCancel(false)
       .setFullScreenIntent(fullScreenPending, true)
+      // Tapping the notification opens the workout too.
+      .setContentIntent(fullScreenPending)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .build()
   }

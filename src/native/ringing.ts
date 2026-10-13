@@ -37,6 +37,7 @@ interface RingingModuleSpec {
   pickAlarmSound(currentUri: string | null): Promise<PickedSound | null>;
   getSoundTitle(uri: string | null): Promise<string>;
   openFullScreenIntentSettings(): Promise<void>;
+  openOverlaySettings(): Promise<void>;
   getActiveRinging(): Promise<{
     alarmId: string;
     exercise: ExerciseType;
@@ -49,6 +50,11 @@ interface RingingModuleSpec {
  * ever showing the workout screen (or miss its time).
  */
 export interface AlarmReadiness {
+  /**
+   * "Display over other apps": lets the alarm take over the screen while
+   * the phone is in use (otherwise only a heads-up notification shows).
+   */
+  overlay: boolean;
   notifications: boolean;
   /** Android 14+: allowed to open full-screen over the lock screen. */
   fullScreen: boolean;
@@ -120,6 +126,14 @@ export async function getActiveRinging(): Promise<{
 
 export async function getAlarmReadiness(): Promise<AlarmReadiness> {
   return spec().getAlarmReadiness();
+}
+
+/**
+ * Open "Display over other apps" — on Xiaomi, its permission editor, which
+ * also holds "Display pop-up windows while running in the background".
+ */
+export async function openOverlaySettings(): Promise<void> {
+  await spec().openOverlaySettings();
 }
 
 /** Open the system page for "full-screen notifications" (Android 14+). */

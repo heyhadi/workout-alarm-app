@@ -9,6 +9,7 @@ import {
   getAlarmReadiness,
   isRingingModuleAvailable,
   openFullScreenIntentSettings,
+  openOverlaySettings,
 } from './ringing';
 
 export async function ensureAlarmPermissions(): Promise<void> {
@@ -30,7 +31,25 @@ export async function ensureAlarmPermissions(): Promise<void> {
 
   if (!isRingingModuleAvailable()) return;
   const readiness = await getAlarmReadiness().catch(() => null);
-  if (readiness && !readiness.fullScreen) {
+  if (!readiness) return;
+  // One prompt at a time; Settings lists anything still missing.
+  if (readiness.fullScreen && !readiness.overlay) {
+    Alert.alert(
+      'Let the alarm take over the screen',
+      'Allow “Display over other apps” so the workout opens even while you’re using the phone. On Xiaomi, also allow “Display pop-up windows while running in the background”.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Open settings',
+          onPress: () => {
+            openOverlaySettings().catch(() => undefined);
+          },
+        },
+      ],
+    );
+    return;
+  }
+  if (!readiness.fullScreen) {
     Alert.alert(
       'Allow full-screen alarms',
       'Without this, the alarm rings but the workout screen won’t open over the lock screen.',

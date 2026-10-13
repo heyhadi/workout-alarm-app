@@ -16,6 +16,7 @@ import {
   getAlarmReadiness,
   isRingingModuleAvailable,
   openFullScreenIntentSettings,
+  openOverlaySettings,
   type AlarmReadiness,
 } from '../native/ringing';
 import { STEPS_PER_REP } from '../native/steps';
@@ -99,6 +100,21 @@ export default function SettingsScreen() {
         readiness && !readiness.fullScreen
           ? () => {
               openFullScreenIntentSettings().catch(() => undefined);
+            }
+          : undefined,
+    },
+    {
+      label: 'Open over other apps',
+      ok: readiness?.overlay ?? null,
+      detail: readiness
+        ? readiness.overlay
+          ? 'Allowed — the workout takes over even while you use the phone.'
+          : 'Off — while you use the phone, the alarm only shows a notification. Tap to allow (on Xiaomi, also allow pop-up windows in the background).'
+        : devBuildOnly,
+      onFix:
+        readiness && !readiness.overlay
+          ? () => {
+              openOverlaySettings().catch(() => undefined);
             }
           : undefined,
     },

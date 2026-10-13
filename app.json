@@ -20,7 +20,8 @@
         "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS",
         "android.permission.WAKE_LOCK",
         "android.permission.CAMERA",
-        "android.permission.ACTIVITY_RECOGNITION"
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "predictiveBackGestureEnabled": false
     },
