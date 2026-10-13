@@ -1,58 +1,71 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlarmCard } from '../components/AlarmCard';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { Screen } from '../components/Screen';
-import { UpdateCard } from '../components/UpdateCard';
-import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
-import { isOnboardingDone, markOnboardingDone } from '../storage/settings';
-import { useTokens } from '../appearance';
-import { primitives, space, type as typeScale } from '../../theme/tokens';
-import { timeUntil } from '../workout/scheduling';
-import { useStrings } from '../i18n';
+import { TabBar } from '../components/TabBar';
+import { primitives, space } from '../../theme/tokens';
 import {
-  applyAlarmSchedule,
   cancelAlarm,
   isAlarmModuleAvailable,
   nextFireTimeMs,
+  scheduleAlarm,
 } from '../native/alarms';
 import {
   currentStreakDays,
   deleteAlarm,
   listAlarms,
   setAlarmEnabled,
+  upsertAlarm,
 } from '../storage/db';
 import type { Alarm } from '../types';
 
+const SAMPLE_ALARM: Alarm = {
+  id: 'sample-1',
+  time: '06:30',
+  days: [1, 2, 3, 4, 5],
+  exercise: 'squats',
+  repTarget: 20,
+  difficulty: 'standard',
+  ringtone: 'Morning energy',
+  backupExercise: 'steps',
+  lockInMinutes: 30,
+  enabled: true,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+};
+
+function CountdownText({ hours, minutes }: { hours: number; minutes: number }) {
+  return (
+    <Text style={styles.countdown}>
+      <Text style={styles.countdownDim}>Alarm berikutnya </Text>
+      <Text style={styles.countdownHot}>
+        {`${hours} jam ${minutes} menit lagi`}
+      </Text>
+    </Text>
+  );
+}
+
 /**
- * Screen 1 — Alarm list (day mode).
- * All alarms, next-alarm countdown, streak badge. Editing locks inside the
- * lock-in window: the toggle becomes a "Locked" badge.
+ * Screen 1 — Alarm list (dark home screen).
+ * All alarms, next-alarm countdown, streak badge, bottom tabs.
+ * Editing locks inside the lock-in window: the toggle becomes a badge.
  */
 export default function AlarmListScreen() {
   const router = useRouter();
-  const t = useTokens('day');
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [streak, setStreak] = useState(0);
-  const [nextFire, setNextFire] = useState<number | undefined>(undefined);
-  // Clock reading taken with nextFire, so render stays pure.
-  const [refreshedAt, setRefreshedAt] = useState(0);
-  const strings = useStrings();
-  const readiness = useAlarmReadiness();
-  const notReady = readiness.pending;
-
-  // First launch: walk through the checklist once, if anything's missing.
-  useEffect(() => {
-    if (readiness.items === null || isOnboardingDone()) return;
-    markOnboardingDone();
-    if (notReady > 0) router.push('/readiness');
-  }, [readiness.items, notReady, router]);
-
+  const [countdown, setCountdown] = useState<{ h: number; m: number } | undefined>(
+    undefined,
+  );
   const [lockedById, setLockedById] = useState<Map<string, boolean>>(() => new Map());
 
   const refresh = useCallback(async () => {
-    const rows = await listAlarms();
+    let rows = await listAlarms();
+    if (rows.length === 0) {
+      await upsertAlarm(SAMPLE_ALARM);
+      rows = await listAlarms();
+    }
     // Clock-dependent derivations live here (async), never during render.
     const now = Date.now();
     const locked = new Map<string, boolean>();
@@ -70,20 +83,22 @@ export default function AlarmListScreen() {
       }
     }
     setAlarms(rows);
-    setNextFire(next);
-    setRefreshedAt(now);
+    if (next !== undefined) {
+      const diffMs = Math.max(0, next - Date.now());
+      setCountdown({
+        h: Math.floor(diffMs / 3_600_000),
+        m: Math.floor((diffMs % 3_600_000) / 60_000),
+      });
+    } else {
+      setCountdown(undefined);
+    }
     setLockedById(locked);
     setStreak(await currentStreakDays());
   }, []);
 
-  // Refresh on focus, then every 30 s so the countdown keeps moving.
   useFocusEffect(
     useCallback(() => {
       refresh().catch(() => undefined);
-      const timer = setInterval(() => {
-        refresh().catch(() => undefined);
-      }, 30_000);
-      return () => clearInterval(timer);
     }, [refresh]),
   );
 
@@ -101,161 +116,143 @@ export default function AlarmListScreen() {
 
   const handleToggle = async (alarm: Alarm, enabled: boolean) => {
     await setAlarmEnabled(alarm.id, enabled);
-    // Native module not linked yet (Expo Go) — DB state is the fallback.
-    await applyAlarmSchedule({ ...alarm, enabled }).catch(() => undefined);
+    try {
+      if (enabled && isAlarmModuleAvailable()) {
+        await scheduleAlarm({
+          alarmId: alarm.id,
+          time: alarm.time,
+          days: alarm.days,
+          exercise: alarm.exercise,
+          repTarget: alarm.repTarget,
+        });
+      } else if (isAlarmModuleAvailable()) {
+        await cancelAlarm(alarm.id);
+      }
+    } catch {
+      // Native module not linked yet (Expo Go) — DB state is the fallback.
+    }
     await refresh();
   };
 
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Text style={[typeScale.display, { color: t.textPrimary, fontSize: 32 }]}>
-          {strings.alarms.title}
-        </Text>
-        {streak > 0 && (
-          <View style={[styles.streak, { backgroundColor: t.accentSoft }]}>
-            <Text style={[typeScale.label, { color: t.accentStrong }]}>
-              {`🔥 ${strings.streak(streak)}`}
-            </Text>
+    <Screen mode="alarm" noPadding>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Alarm</Text>
+          {streak > 0 && (
+            <View style={styles.streak}>
+              <Text style={styles.streakText}>{`🔥 ${streak} pagi`}</Text>
+            </View>
+          )}
+        </View>
+
+        {countdown !== undefined && (
+          <View style={styles.countdownWrap}>
+            <CountdownText hours={countdown.h} minutes={countdown.m} />
           </View>
         )}
-      </View>
 
-      <View style={styles.links}>
-        {(
-          [
-            [strings.alarms.practice, '/practice'],
-            [strings.alarms.settings, '/settings'],
-          ] as const
-        ).map(([label, href]) => (
-          <Pressable
-            key={href}
-            accessibilityRole="link"
-            onPress={() => router.push(href)}
-            style={[
-              styles.link,
-              { borderColor: t.border, backgroundColor: t.bgSurface },
-            ]}
-          >
-            <Text style={[typeScale.bodySmall, { color: t.textPrimary }]}>{label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {notReady > 0 && (
-        <View
-          style={[
-            styles.notReady,
-            {
-              backgroundColor: t.accentSoft,
-              borderColor: t.accentStrong,
-            },
-          ]}
-        >
-          <Text style={[typeScale.label, { color: t.accentStrong }]}>
-            {strings.alarms.notReadyTitle}
-          </Text>
-          <Text style={[typeScale.bodySmall, { color: t.textPrimary }]}>
-            {strings.alarms.notReadyBody(notReady)}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/readiness')}
-            style={[styles.fixButton, { backgroundColor: primitives.energy[600] }]}
-          >
-            <Text style={[typeScale.bodySmall, { color: primitives.white }]}>
-              {strings.alarms.fixNow}
+        <FlatList
+          data={alarms}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const locked = lockedById.get(item.id) ?? false;
+            return (
+              <AlarmCard
+                alarm={item}
+                locked={locked}
+                lockLabel={locked ? `Locked — fires ${item.time}` : ''}
+                onToggle={(enabled) => handleToggle(item, enabled)}
+                onPress={() => router.push(`/alarm/${item.id}`)}
+                onDelete={() => handleDelete(item)}
+              />
+            );
+          }}
+          ListEmptyComponent={
+            <Text style={styles.empty}>
+              Belum ada alarm. Tambah yang pertama di bawah.
             </Text>
-          </Pressable>
-        </View>
-      )}
-
-      <UpdateCard />
-
-      {nextFire !== undefined && (
-        <Text
-          style={[typeScale.body, { color: t.textSecondary, marginBottom: space.md }]}
-        >
-          {strings.alarms.nextAlarm(
-            strings.timeUntil(timeUntil(nextFire, refreshedAt)),
-          )}
-        </Text>
-      )}
-
-      <FlatList
-        data={alarms}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const locked = lockedById.get(item.id) ?? false;
-          return (
-            <AlarmCard
-              alarm={item}
-              locked={locked}
-              lockLabel={locked ? strings.alarms.locked(item.time) : ''}
-              onToggle={(enabled) => handleToggle(item, enabled)}
-              // Inside the lock-in window the alarm can't be edited or weakened.
-              onPress={() => {
-                if (!locked) router.push(`/alarm/${item.id}`);
-              }}
-              onDelete={() => handleDelete(item)}
-            />
-          );
-        }}
-        ListEmptyComponent={
-          <Text style={[typeScale.body, { color: t.textSecondary }]}>
-            {strings.alarms.empty}
-          </Text>
-        }
-        contentContainerStyle={styles.list}
-      />
-
-      <View style={styles.cta}>
-        <PrimaryButton
-          label={strings.alarms.newAlarm}
-          onPress={() => router.push('/alarm/new')}
+          }
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
         />
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/alarm/new')}
+          style={styles.newButton}
+        >
+          <Text style={styles.newButtonText}>+ Alarm baru</Text>
+        </Pressable>
       </View>
+      <TabBar active="alarm" />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: space.md,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: space.sm,
   },
+  title: {
+    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontSize: 36,
+    lineHeight: 40,
+    color: primitives.white,
+  },
   streak: {
+    backgroundColor: primitives.surfaceDark,
     borderRadius: 999,
     paddingHorizontal: space.md,
-    paddingVertical: space.xs,
+    paddingVertical: space.sm,
   },
-  notReady: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: space.md,
+  streakText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
+    color: primitives.energy[400],
+  },
+  countdownWrap: {
+    marginBottom: space.lg,
+  },
+  countdown: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 17,
+    lineHeight: 24,
+  },
+  countdownDim: {
+    color: primitives.ink[500],
+  },
+  countdownHot: {
+    color: primitives.energy[400],
+    fontFamily: 'Inter_600SemiBold',
+  },
+  list: { paddingBottom: space.md },
+  empty: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: primitives.ink[500],
+    textAlign: 'center',
+    marginTop: space.xl,
+  },
+  newButton: {
+    backgroundColor: primitives.energy[500],
+    borderRadius: 32,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: space.md,
-    gap: space.xs,
   },
-  fixButton: {
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    marginTop: space.xs,
-    minHeight: 36,
-    justifyContent: 'center',
+  newButtonText: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 18,
+    color: primitives.white,
   },
-  links: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
-  link: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  list: { paddingBottom: space.xl },
-  cta: { paddingTop: space.sm },
 });
