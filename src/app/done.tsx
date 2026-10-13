@@ -82,7 +82,10 @@ export default function DoneScreen() {
       ]);
       if (cancelled) return;
       setStreak(days);
-      setWeek(weekDone(sessions, finishedAt));
+      const days7 = weekDone(sessions, finishedAt);
+      // This morning is done the moment you're here — even if the save lagged.
+      if (!wasSkipped) days7[new Date(finishedAt).getDay()] = true;
+      setWeek(days7);
       if (alarm) {
         setExercise(alarm.exercise);
         if (!wasSkipped) {
