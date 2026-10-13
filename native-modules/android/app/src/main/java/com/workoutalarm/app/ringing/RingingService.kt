@@ -66,6 +66,7 @@ class RingingService : Service() {
     val exercise = intent?.getStringExtra(AlarmReceiver.EXTRA_EXERCISE) ?: "squats"
     val repTarget = intent?.getIntExtra(AlarmReceiver.EXTRA_REP_TARGET, 20) ?: 20
 
+    currentRinging = RingingInfo(alarmId, exercise, repTarget)
     startForeground(NOTIFICATION_ID, buildNotification(alarmId, exercise, repTarget))
     startSound()
     startVibration()
@@ -168,6 +169,7 @@ class RingingService : Service() {
 
   private fun shutdown() {
     watchdog.removeCallbacks(watchdogTask)
+    currentRinging = null
     try {
       mediaPlayer?.stop()
       mediaPlayer?.release()
@@ -189,5 +191,16 @@ class RingingService : Service() {
     private const val CHANNEL_ID = "workout_alarm_ringing"
     private const val NOTIFICATION_ID = 7101
     private const val WATCHDOG_MS = 5000L
+
+    /** What the service is currently ringing for, null when idle. */
+    @Volatile
+    var currentRinging: RingingInfo? = null
   }
 }
+
+/** Alarm payload the service is currently ringing for. */
+data class RingingInfo(
+  val alarmId: String,
+  val exercise: String,
+  val repTarget: Int,
+)
