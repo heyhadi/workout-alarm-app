@@ -19,12 +19,20 @@
 </p>
 
 *Workout Alarm* is a strict Android alarm clock built with React Native + Expo. It exists for one
-reason: mornings where willpower loses. English and Bahasa Indonesia. This is a personal project.
+reason: mornings where willpower loses. English and everyday Bahasa Indonesia, light and dark. This is a personal project.
 
 <p align="center">
-  <img src="docs/images/1-new-alarm.png" width="230" alt="New alarm: inline time wheel and 'Rings in' countdown">
-  <img src="docs/images/2-readiness.png" width="230" alt="Alarm readiness checklist, all green">
+  <img src="docs/images/1-alarms.png" width="190" alt="Alarm list with the next-alarm countdown">
+  <img src="docs/images/2-new-alarm.png" width="190" alt="New alarm: time wheel, presets and repeat days">
+  <img src="docs/images/3-done.png" width="190" alt="Done screen: closed rep ring, stats and week streak">
+  <img src="docs/images/4-readiness.png" width="190" alt="Alarm readiness checklist, all green">
 </p>
+<p align="center">
+  <img src="docs/images/5-settings.png" width="190" alt="Settings: language, appearance, readiness, emergency exit">
+  <img src="docs/images/6-dark-alarm.png" width="190" alt="New alarm in dark mode">
+  <img src="docs/images/7-dark-settings.png" width="190" alt="Settings in dark mode">
+</p>
+<p align="center"><sub>The workout screen itself is a full-screen camera view with a framing border and the rep ring — best seen on your own phone.</sub></p>
 
 ## What it does
 
@@ -34,7 +42,9 @@ reason: mornings where willpower loses. English and Bahasa Indonesia. This is a 
 | **No dismiss. No snooze. No escape hatch.** The ringing screen has no buttons at all. Lock-task mode swallows Back, Home and recents, and the foreground service keeps ringing through the lock screen. | **A backup that still makes you move.** Camera denied, broken, or nobody in frame for 2 minutes? The alarm switches to the step counter: 3 steps per rep. |
 | **Survives everything short of willpower.** Every alarm is re-armed after reboots, dead batteries and clock changes; repeating alarms arm their next morning when you finish; a finished alarm never rings twice. | **Ready before it matters.** A readiness checklist walks through every permission the alarm needs — including Xiaomi's own switches — and the alarm list nags until they're all green. |
 | **Practice mode.** The real workout screen and the real counter, with no alarm and no lockdown: try your framing and your squats before 6 a.m. does. | **Your sound, your language.** Pick any alarm sound on your phone (never silent). Use the app in English or Bahasa Indonesia. |
-| **Updates itself.** Every build on `main` is published as a GitHub release; the app offers it in-app and installs it only if it's newer and signed with the same key. | **Your data stays yours.** Alarms and history live in SQLite on the device, settings in MMKV. No account, no cloud, no analytics. |
+| **A finish worth waking for.** The rep ring closes with a check, then your reps and time, this week's mornings, your streak — and how much faster you were than last time. | **An emergency exit that isn't a snooze.** Off by default. When on, it appears only after 10 minutes of ringing: hold for 60 seconds, then type a sentence. That morning doesn't count toward your streak. |
+| **Light and dark.** Follows your phone, or pick one in Settings. The workout screen is always dark. | **Updates itself.** Every build on `main` is published as a GitHub release; the app offers it in-app and installs it only if it's newer and signed with the same key. |
+| **Your data stays yours.** Alarms and history live in SQLite on the device, settings in MMKV. No account, no cloud, no analytics. | |
 
 ## Install
 
@@ -90,9 +100,10 @@ npm run typecheck && npm run lint
 
 - Stack: Expo SDK 57, React Native 0.86, TypeScript strict, Expo Router, expo-sqlite, react-native-mmkv, expo-camera.
 - `android/` is generated and gitignored — native behavior lives in `app.json`, `plugins/` (config plugins) and `native-modules/` (canonical Kotlin sources).
-- UI text lives in `src/i18n/` (`en.ts`, `id.ts`); the Indonesian file is typed against the English one, so a missing translation fails the build.
+- UI text lives in `src/i18n/` (`en.ts`, `id.ts`); the Indonesian file is typed against the English one, so a missing translation fails the build. Indonesian is written casually, the way people talk ("HP", "rep", "nggak").
+- Colours come from semantic tokens (`theme/tokens.ts`) via `useTokens()` (`src/appearance.tsx`): light, dark, and the always-dark alarm set.
 - Icon and splash sources are SVGs in `assets/source/`.
-- Tests cover the rep counter, scheduling, readiness checklist, release parsing, languages and design tokens (`__tests__/`, vitest).
+- Tests cover the rep counter, scheduling, readiness checklist, emergency exit rules, streak/progress, release parsing, languages and design tokens (`__tests__/`, vitest).
 - CI (`.github/workflows/android-build.yml`) builds a signed release APK on every push to `main` and publishes it as release `build-<run number>`.
 
 **Demo mode.** Without the native bridges (Expo Go / web), the workout screen runs a clearly-labelled
@@ -101,10 +112,9 @@ set → ring → verify → release flow is exercisable end to end. Verified cou
 
 ## Coming next
 
-1. Emergency-exit valve design (clearly labelled, deliberately slow — never a snooze in disguise)
-2. Voice rep counting as an alternative to the camera
-3. Smart progression (rep targets that adapt) and workout stats
-4. Release builds for the Play Store (internal track first)
+1. Voice rep counting as an alternative to the camera
+2. Smart progression (rep targets that adapt) and workout stats
+3. Release builds for the Play Store (internal track first)
 
 ## License
 
