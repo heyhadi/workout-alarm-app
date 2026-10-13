@@ -66,7 +66,7 @@ export interface RepCountedPayload {
 }
 
 export interface PoseLostPayload {
-  reason: 'no_body' | 'camera_error' | 'low_light';
+  reason: 'no_body' | 'partial_body' | 'camera_error' | 'low_light';
 }
 
 export interface AlarmReleasedPayload {
