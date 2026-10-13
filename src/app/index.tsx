@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlarmCard } from '../components/AlarmCard';
 import { Screen } from '../components/Screen';
 import { TabBar } from '../components/TabBar';
+import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, space } from '../../theme/tokens';
 import {
   cancelAlarm,
@@ -36,9 +37,11 @@ const SAMPLE_ALARM: Alarm = {
 };
 
 function CountdownText({ hours, minutes }: { hours: number; minutes: number }) {
+  const scheme = useColorScheme();
+  const t = getSemanticTokens(scheme === 'dark' ? 'alarm' : 'day');
   return (
-    <Text style={styles.countdown}>
-      <Text style={styles.countdownDim}>Alarm berikutnya </Text>
+    <Text style={[styles.countdown, { color: t.textSecondary }]}>
+      Alarm berikutnya{' '}
       <Text style={styles.countdownHot}>
         {`${hours} jam ${minutes} menit lagi`}
       </Text>
@@ -53,6 +56,9 @@ function CountdownText({ hours, minutes }: { hours: number; minutes: number }) {
  */
 export default function AlarmListScreen() {
   const router = useRouter();
+  const scheme = useColorScheme();
+  const mode = scheme === 'dark' ? 'alarm' : 'day';
+  const t = getSemanticTokens(mode);
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [streak, setStreak] = useState(0);
   const [countdown, setCountdown] = useState<{ h: number; m: number } | undefined>(
@@ -135,12 +141,12 @@ export default function AlarmListScreen() {
   };
 
   return (
-    <Screen mode="alarm" noPadding>
+    <Screen mode={mode} noPadding>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Alarm</Text>
+          <Text style={[styles.title, { color: t.textPrimary }]}>Alarm</Text>
           {streak > 0 && (
-            <View style={styles.streak}>
+            <View style={[styles.streak, { backgroundColor: t.bgSurface }]}>
               <Text style={styles.streakText}>{`🔥 ${streak} pagi`}</Text>
             </View>
           )}
@@ -169,7 +175,7 @@ export default function AlarmListScreen() {
             );
           }}
           ListEmptyComponent={
-            <Text style={styles.empty}>
+            <Text style={[styles.empty, { color: t.textSecondary }]}>
               Belum ada alarm. Tambah yang pertama di bawah.
             </Text>
           }
@@ -206,10 +212,8 @@ const styles = StyleSheet.create({
     fontFamily: 'PlusJakartaSans_800ExtraBold',
     fontSize: 36,
     lineHeight: 40,
-    color: primitives.white,
   },
   streak: {
-    backgroundColor: primitives.surfaceDark,
     borderRadius: 999,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
@@ -227,18 +231,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 24,
   },
-  countdownDim: {
-    color: primitives.ink[500],
-  },
   countdownHot: {
-    color: primitives.energy[400],
+    color: primitives.energy[500],
     fontFamily: 'Inter_600SemiBold',
   },
   list: { paddingBottom: space.md },
   empty: {
     fontFamily: 'Inter_400Regular',
     fontSize: 15,
-    color: primitives.ink[500],
     textAlign: 'center',
     marginTop: space.xl,
   },
