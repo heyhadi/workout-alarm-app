@@ -25,9 +25,9 @@ const GRADLE_DEPS = [
   // NOTE: 18.0.0 stable does not exist on Google Maven; 18.0.0-beta5 is the
   // current release line (verified against maven-metadata.xml).
   'implementation("com.google.mlkit:pose-detection:18.0.0-beta5")',
-  'implementation("androidx.camera:camera-core:1.3.4")',
-  'implementation("androidx.camera:camera-camera2:1.3.4")',
-  'implementation("androidx.camera:camera-lifecycle:1.3.4")',
+  'implementation("androidx.camera:camera-core:1.6.2")',
+  'implementation("androidx.camera:camera-camera2:1.6.2")',
+  'implementation("androidx.camera:camera-lifecycle:1.6.2")',
   // Explicit full Guava: CameraX's ProcessCameraProvider.getInstance() returns
   // Guava's ListenableFuture, which must be on the compile classpath. We use
   // full Guava (not the standalone listenablefuture artifact) because the
@@ -35,7 +35,7 @@ const GRADLE_DEPS = [
   // listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (an EMPTY jar
   // Gradle prefers by version number), and forcing the real 1.0 then causes
   // "Duplicate class" against Guava's own bundled copy.
-  'implementation("com.google.guava:guava:33.3.1-android")',
+  'implementation("com.google.guava:guava:33.7.2-android")',
 ];
 
 const withWorkoutAlarmPackage = (config) => {
