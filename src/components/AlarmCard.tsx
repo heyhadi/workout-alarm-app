@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { getSemanticTokens } from '../../theme/helpers';
 import {
   components,
@@ -19,11 +20,14 @@ interface AlarmCardProps {
   lockLabel: string;
   onToggle: (enabled: boolean) => void;
   onPress: () => void;
+  onDelete: () => void;
 }
 
 /**
  * One alarm row: big tabular time, exercise + reps + days beneath,
  * toggle on the right — or a "Locked" badge inside the lock-in window.
+ * Swipe left to reveal delete (disabled while locked: no dodging the
+ * workout by deleting inside the lock-in window).
  */
 export function AlarmCard({
   alarm,
@@ -31,9 +35,22 @@ export function AlarmCard({
   lockLabel,
   onToggle,
   onPress,
+  onDelete,
 }: AlarmCardProps) {
   const t = getSemanticTokens('day');
-  return (
+
+  const renderRightActions = () => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Delete alarm ${alarm.time}`}
+      onPress={onDelete}
+      style={[styles.deleteAction, { backgroundColor: t.stateDanger }]}
+    >
+      <Text style={[styles.deleteLabel, { color: t.textOnAccent }]}>Delete</Text>
+    </Pressable>
+  );
+
+  const card = (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
@@ -98,6 +115,18 @@ export function AlarmCard({
       </View>
     </Pressable>
   );
+
+  if (locked) {
+    return card;
+  }
+  return (
+    <Swipeable
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+    >
+      {card}
+    </Swipeable>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -120,6 +149,16 @@ const styles = StyleSheet.create({
   },
   dayLetter: { fontSize: 11, fontFamily: typeScale.label.fontFamily },
   side: { marginLeft: space.md, alignItems: 'flex-end', justifyContent: 'center' },
+  deleteAction: {
+    borderRadius: components.alarmCard.borderRadius,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingHorizontal: space.lg,
+    marginBottom: space.md,
+    marginLeft: space.sm,
+    minWidth: 96,
+  },
+  deleteLabel: { fontSize: 16, fontFamily: typeScale.label.fontFamily },
   lockBadge: {
     borderRadius: 999,
     paddingHorizontal: space.sm,
