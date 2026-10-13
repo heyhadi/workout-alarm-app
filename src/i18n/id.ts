@@ -163,26 +163,6 @@ export const id: Strings = {
     devBuild: 'Perlu dev build',
     readinessBody:
       'Izin yang dibutuhkan alarm untuk berbunyi, mengambil alih layar, dan diselesaikan.',
-    strictness: 'Tingkat ketegasan',
-    strictnessOptions: {
-      standard: {
-        title: 'Standar',
-        detail: 'Lock-task + pemulihan. Aman untuk Play Store.',
-      },
-      maximum: {
-        title: 'Maksimal',
-        detail: 'Kontrol device-owner. Pemasangan dan review lebih sulit.',
-      },
-    },
-    emergency: 'Jalan keluar darurat',
-    emergencyOptions: {
-      none: { title: 'Tidak ada', detail: 'Tanpa jalan keluar. Ketegasan penuh.' },
-      slow: {
-        title: 'Katup pengaman lambat',
-        detail:
-          'Jalan keluar yang sengaja dibuat berat, diatur sebelumnya, mati secara bawaan.',
-      },
-    },
     lockIn: 'Jendela kunci bawaan',
   },
   readiness: {

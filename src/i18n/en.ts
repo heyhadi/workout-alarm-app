@@ -171,25 +171,6 @@ export const en = {
     devBuild: 'Requires a dev build',
     readinessBody:
       'Permissions the alarm needs to ring, take over the screen and be finished.',
-    strictness: 'Strictness level',
-    strictnessOptions: {
-      standard: {
-        title: 'Standard',
-        detail: 'Lock-task + recovery. Play Store friendly.',
-      },
-      maximum: {
-        title: 'Maximum',
-        detail: 'Device-owner controls. Harder install and review.',
-      },
-    },
-    emergency: 'Emergency exit',
-    emergencyOptions: {
-      none: { title: 'None', detail: 'No valve at all. Absolute strictness.' },
-      slow: {
-        title: 'Slow safety valve',
-        detail: 'Deliberately painful exit, set up in advance, off by default.',
-      },
-    },
     lockIn: 'Default lock-in window',
   },
   readiness: {

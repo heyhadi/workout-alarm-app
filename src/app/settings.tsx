@@ -8,13 +8,10 @@ import { getSemanticTokens } from '../../theme/helpers';
 import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
 import {
   getSettings,
-  setEmergencyExit,
   setLockInMinutes,
-  setStrictness,
   type LanguageSetting,
 } from '../storage/settings';
 import { STEPS_PER_REP } from '../native/steps';
-import type { EmergencyExitMode, StrictnessLevel } from '../types';
 
 const LOCK_IN_OPTIONS = [15, 30, 45, 60];
 
@@ -36,64 +33,6 @@ function Group({ children }: { children: ReactNode }) {
     >
       {children}
     </View>
-  );
-}
-
-interface Choice<T> {
-  value: T;
-  title: string;
-  detail?: string;
-}
-
-/** Single choice: rows in a Group, an orange check on the selected one. */
-function ChoiceGroup<T extends string>({
-  choices,
-  selected,
-  onSelect,
-}: {
-  choices: Choice<T>[];
-  selected: T;
-  onSelect: (value: T) => void;
-}) {
-  const t = getSemanticTokens('day');
-  return (
-    <Group>
-      {choices.map((choice, index) => {
-        const isSelected = choice.value === selected;
-        return (
-          <Pressable
-            key={choice.value}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: isSelected }}
-            onPress={() => onSelect(choice.value)}
-            style={[
-              styles.row,
-              index > 0 && [styles.divider, { borderTopColor: t.border }],
-              isSelected && { backgroundColor: primitives.energy[50] },
-            ]}
-          >
-            <View style={styles.rowMain}>
-              <Text
-                style={[
-                  typeScale.label,
-                  { color: isSelected ? primitives.energy[600] : t.textPrimary },
-                ]}
-              >
-                {choice.title}
-              </Text>
-              {choice.detail ? (
-                <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>
-                  {choice.detail}
-                </Text>
-              ) : null}
-            </View>
-            <Text style={[typeScale.heading, styles.check, { color: t.actionPrimary }]}>
-              {isSelected ? '✓' : ''}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </Group>
   );
 }
 
@@ -143,9 +82,9 @@ function Segments<T extends string | number>({
 }
 
 /**
- * Screen 6 — Settings & strictness.
- * Language, alarm readiness (links to the checklist), strictness level,
- * emergency-exit setup, step backup, lock-in default.
+ * Screen 6 — Settings.
+ * Language, alarm readiness (links to the checklist), step backup,
+ * lock-in default. Every option here is live — no placeholders.
  */
 export default function SettingsScreen() {
   const t = getSemanticTokens('day');
@@ -154,12 +93,6 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { items, pending } = useAlarmReadiness();
   // Synchronous MMKV reads belong in lazy initializers, not effects.
-  const [strictness, setStrictnessState] = useState<StrictnessLevel>(
-    () => getSettings().strictness,
-  );
-  const [emergencyExit, setEmergencyExitState] = useState<EmergencyExitMode>(
-    () => getSettings().emergencyExit,
-  );
   const [lockIn, setLockIn] = useState(() => getSettings().lockInMinutes);
 
   const s = strings.settings;
@@ -217,32 +150,6 @@ export default function SettingsScreen() {
             </Text>
           </Pressable>
         </Group>
-
-        <SectionTitle>{s.strictness}</SectionTitle>
-        <ChoiceGroup<StrictnessLevel>
-          selected={strictness}
-          onSelect={(level) => {
-            setStrictnessState(level);
-            setStrictness(level);
-          }}
-          choices={(['standard', 'maximum'] as StrictnessLevel[]).map((level) => ({
-            value: level,
-            ...s.strictnessOptions[level],
-          }))}
-        />
-
-        <SectionTitle>{s.emergency}</SectionTitle>
-        <ChoiceGroup<EmergencyExitMode>
-          selected={emergencyExit}
-          onSelect={(mode) => {
-            setEmergencyExitState(mode);
-            setEmergencyExit(mode);
-          }}
-          choices={(['none', 'slow'] as EmergencyExitMode[]).map((mode) => ({
-            value: mode,
-            ...s.emergencyOptions[mode],
-          }))}
-        />
 
         <SectionTitle>{strings.form.backup}</SectionTitle>
         <Group>
