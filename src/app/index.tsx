@@ -1,15 +1,17 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlarmCard } from '../components/AlarmCard';
 import { Screen } from '../components/Screen';
 import { TabBar } from '../components/TabBar';
-import { getSemanticTokens } from '../../theme/helpers';
+import { useTokens } from '../appearance';
+import { useStrings } from '../i18n';
 import { primitives, space } from '../../theme/tokens';
+import { timeUntil, type TimeUntil } from '../workout/scheduling';
+import { nextFireTimeMs } from '../native/alarms';
 import {
   cancelAlarm,
   isAlarmModuleAvailable,
-  nextFireTimeMs,
   scheduleAlarm,
 } from '../native/alarms';
 import {
@@ -36,35 +38,21 @@ const SAMPLE_ALARM: Alarm = {
   updatedAt: Date.now(),
 };
 
-function CountdownText({ hours, minutes }: { hours: number; minutes: number }) {
-  const scheme = useColorScheme();
-  const t = getSemanticTokens(scheme === 'dark' ? 'alarm' : 'day');
-  return (
-    <Text style={[styles.countdown, { color: t.textSecondary }]}>
-      Alarm berikutnya{' '}
-      <Text style={styles.countdownHot}>
-        {`${hours} jam ${minutes} menit lagi`}
-      </Text>
-    </Text>
-  );
-}
-
 /**
- * Screen 1 — Alarm list (dark home screen).
+ * Screen 1 — Alarm list (home screen).
  * All alarms, next-alarm countdown, streak badge, bottom tabs.
  * Editing locks inside the lock-in window: the toggle becomes a badge.
  */
 export default function AlarmListScreen() {
   const router = useRouter();
-  const scheme = useColorScheme();
-  const mode = scheme === 'dark' ? 'alarm' : 'day';
-  const t = getSemanticTokens(mode);
+  const t = useTokens();
+  const s = useStrings();
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [streak, setStreak] = useState(0);
-  const [countdown, setCountdown] = useState<{ h: number; m: number } | undefined>(
-    undefined,
+  const [countdown, setCountdown] = useState<TimeUntil | undefined>(undefined);
+  const [lockedById, setLockedById] = useState<Map<string, boolean>>(
+    () => new Map(),
   );
-  const [lockedById, setLockedById] = useState<Map<string, boolean>>(() => new Map());
 
   const refresh = useCallback(async () => {
     let rows = await listAlarms();
@@ -89,15 +77,7 @@ export default function AlarmListScreen() {
       }
     }
     setAlarms(rows);
-    if (next !== undefined) {
-      const diffMs = Math.max(0, next - Date.now());
-      setCountdown({
-        h: Math.floor(diffMs / 3_600_000),
-        m: Math.floor((diffMs % 3_600_000) / 60_000),
-      });
-    } else {
-      setCountdown(undefined);
-    }
+    setCountdown(next !== undefined ? timeUntil(next, now) : undefined);
     setLockedById(locked);
     setStreak(await currentStreakDays());
   }, []);
@@ -141,21 +121,28 @@ export default function AlarmListScreen() {
   };
 
   return (
-    <Screen mode={mode} noPadding>
+    <Screen noPadding>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: t.textPrimary }]}>Alarm</Text>
+          <Text style={[styles.title, { color: t.textPrimary }]}>
+            {s.alarms.title}
+          </Text>
           {streak > 0 && (
             <View style={[styles.streak, { backgroundColor: t.bgSurface }]}>
-              <Text style={styles.streakText}>{`🔥 ${streak} pagi`}</Text>
+              <Text style={styles.streakText}>🔥 {s.streak(streak)}</Text>
             </View>
           )}
         </View>
 
         {countdown !== undefined && (
-          <View style={styles.countdownWrap}>
-            <CountdownText hours={countdown.h} minutes={countdown.m} />
-          </View>
+          <Text
+            style={[
+              styles.countdown,
+              { color: t.textSecondary, marginBottom: space.lg },
+            ]}
+          >
+            {s.alarms.nextAlarm(s.timeUntil(countdown))}
+          </Text>
         )}
 
         <FlatList
@@ -167,7 +154,6 @@ export default function AlarmListScreen() {
               <AlarmCard
                 alarm={item}
                 locked={locked}
-                lockLabel={locked ? `Locked — fires ${item.time}` : ''}
                 onToggle={(enabled) => handleToggle(item, enabled)}
                 onPress={() => router.push(`/alarm/${item.id}`)}
                 onDelete={() => handleDelete(item)}
@@ -176,7 +162,7 @@ export default function AlarmListScreen() {
           }}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: t.textSecondary }]}>
-              Belum ada alarm. Tambah yang pertama di bawah.
+              {s.alarms.empty}
             </Text>
           }
           contentContainerStyle={styles.list}
@@ -188,7 +174,7 @@ export default function AlarmListScreen() {
           onPress={() => router.push('/alarm/new')}
           style={styles.newButton}
         >
-          <Text style={styles.newButtonText}>+ Alarm baru</Text>
+          <Text style={styles.newButtonText}>{s.alarms.newAlarm}</Text>
         </Pressable>
       </View>
       <TabBar active="alarm" />
@@ -221,19 +207,12 @@ const styles = StyleSheet.create({
   streakText: {
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
-    color: primitives.energy[400],
-  },
-  countdownWrap: {
-    marginBottom: space.lg,
+    color: primitives.energy[500],
   },
   countdown: {
     fontFamily: 'Inter_400Regular',
     fontSize: 17,
     lineHeight: 24,
-  },
-  countdownHot: {
-    color: primitives.energy[500],
-    fontFamily: 'Inter_600SemiBold',
   },
   list: { paddingBottom: space.md },
   empty: {
