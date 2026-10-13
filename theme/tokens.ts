@@ -73,7 +73,9 @@ export const semantic = {
     stateLocked: primitives.warning[500],
     stateDone: primitives.success[500],
     stateDanger: primitives.danger[500],
-    accentSoft: 'rgba(255, 107, 26, 0.16)',
+    // Selected = a raised, lighter navy with orange text. An orange tint
+    // turns muddy brown on navy, so dark mode lifts instead of tints.
+    accentSoft: '#22396A',
     accentStrong: primitives.energy[400],
   },
   alarm: {
