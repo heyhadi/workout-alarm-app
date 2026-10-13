@@ -14,6 +14,7 @@ import {
 } from '../native/alarms';
 import {
   currentStreakDays,
+  deleteAlarm,
   listAlarms,
   setAlarmEnabled,
   upsertAlarm,
@@ -89,6 +90,18 @@ export default function AlarmListScreen() {
     }, [refresh]),
   );
 
+  const handleDelete = async (alarm: Alarm) => {
+    await deleteAlarm(alarm.id);
+    try {
+      if (isAlarmModuleAvailable()) {
+        await cancelAlarm(alarm.id);
+      }
+    } catch {
+      // Native module not linked yet (Expo Go) — DB state is the fallback.
+    }
+    await refresh();
+  };
+
   const handleToggle = async (alarm: Alarm, enabled: boolean) => {
     await setAlarmEnabled(alarm.id, enabled);
     try {
@@ -144,6 +157,7 @@ export default function AlarmListScreen() {
               lockLabel={locked ? `Locked — fires ${item.time}` : ''}
               onToggle={(enabled) => handleToggle(item, enabled)}
               onPress={() => router.push(`/alarm/${item.id}`)}
+              onDelete={() => handleDelete(item)}
             />
           );
         }}
