@@ -123,7 +123,7 @@ export function AlarmForm({ initial, submitLabel, onSubmit }: AlarmFormProps) {
       <Text style={[typeScale.caption, styles.section, { color: t.textSecondary }]}>
         {strings.form.repeat}
       </Text>
-      <View style={styles.row}>
+      <View style={styles.days}>
         {strings.dayLetters.map((letter, i) => {
           const active = value.days.includes(i);
           return (
@@ -287,6 +287,8 @@ const styles = StyleSheet.create({
   section: { marginTop: space.lg, marginBottom: space.sm },
   ringsIn: { marginTop: space.sm, marginBottom: space.sm },
   row: { flexDirection: 'row', flexWrap: 'wrap' },
+  // All seven days on one line at any width: spread, never wrap.
+  days: { flexDirection: 'row', justifyContent: 'space-between' },
   dayDot: {
     width: 44,
     height: 44,
@@ -294,7 +296,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: space.sm,
   },
   preset: {
     borderWidth: 1,
