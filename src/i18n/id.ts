@@ -47,6 +47,8 @@ export const id: Strings = {
       `Ada ${n} hal yang belum diizinkan. Bisa-bisa alarm bunyi tapi layar olahraganya nggak muncul.`,
     fixNow: 'Beresin',
     nextAlarm: (when) => `Alarm berikutnya ${when} lagi`,
+    nextAlarmPrefix: 'Alarm berikutnya ',
+    nextAlarmSuffix: ' lagi',
     locked: (time) => `Dikunci — bunyi jam ${time}`,
     empty: 'Belum ada alarm. Bikin yang pertama di bawah.',
     newAlarm: '+ Alarm baru',
