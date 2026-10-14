@@ -144,6 +144,11 @@ export function useWorkoutCounter({
     const unsubFraming = addFramingListener((p) => setFraming(p.state));
     const ex = exerciseRef.current;
     if (ex === 'steps') return;
+    // A previous failure must not be terminal: every restart of this effect
+    // is a fresh attempt at the camera, so clear the latch first. Otherwise
+    // one transient bind error pins the screen to step-counting for the rest
+    // of the session — and the exercise picker can't get the camera back.
+    setCameraFailed(false);
     startPoseDetection(ex, repTargetRef.current, EXERCISE_COUNTER_CONFIGS[ex]).catch(
       () => {
         if (!cancelled) setCameraFailed(true);

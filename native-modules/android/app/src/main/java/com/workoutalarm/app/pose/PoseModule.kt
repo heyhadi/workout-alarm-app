@@ -1,5 +1,6 @@
 package com.workoutalarm.app.pose
 
+import android.util.Log
 import android.view.WindowManager
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -61,6 +62,14 @@ class PoseModule(reactContext: ReactApplicationContext) :
   private var detector: PoseDetector? = null
   private var cameraProvider: ProcessCameraProvider? = null
   private val cameraExecutor = Executors.newSingleThreadExecutor()
+
+  // Preview is ALWAYS bound for the session's life, so the session shape
+  // never depends on whether the React surface has mounted yet. Only its
+  // surface provider is deferred (see DeferredSurfaceProvider): a view that
+  // mounts after the session starts still gets a live preview.
+  private var preview: Preview? = null
+  private var analysis: ImageAnalysis? = null
+  private var lifecycleOwner: LifecycleOwner? = null
 
   private var exercise: String = "squats"
   private var repTarget: Int = 20
@@ -126,21 +135,30 @@ class PoseModule(reactContext: ReactApplicationContext) :
           .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
           .build()
         analysis.setAnalyzer(cameraExecutor, ::analyzeFrame)
+        this.analysis = analysis
         try {
           provider.unbindAll()
           // Front camera: the user faces the phone propped up.
           // Single session binds Preview + Analysis together — one camera
           // client, no fight over the exclusive resource.
-          val useCases = mutableListOf<androidx.camera.core.UseCase>(analysis)
-          previewViewRef?.let { pv ->
-            val preview = Preview.Builder().build()
-            preview.setSurfaceProvider(pv.surfaceProvider)
-            useCases.add(0, preview)
-          }
+          //
+          // Preview is bound UNCONDITIONALLY. The surface provider is a
+          // deferred proxy that forwards to whichever PreviewView is mounted
+          // now — or later. Binding Preview only when the view happened to
+          // exist raced the React mount and left the preview permanently
+          // black (analysis still ran, so reps counted with no viewfinder).
+          val preview = Preview.Builder().build()
+          preview.setSurfaceProvider(
+            DeferredSurfaceProvider { previewViewRef?.surfaceProvider }
+          )
+          this.preview = preview
+          lifecycleOwner = activity
+          activeInstance = this
           provider.bindToLifecycle(
             activity,
             androidx.camera.core.CameraSelector.DEFAULT_FRONT_CAMERA,
-            *useCases.toTypedArray()
+            preview,
+            analysis,
           )
           activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         } catch (e: Exception) {
@@ -192,6 +210,10 @@ class PoseModule(reactContext: ReactApplicationContext) :
       cameraProvider?.unbindAll()
       detector?.close()
       detector = null
+      preview = null
+      analysis = null
+      lifecycleOwner = null
+      clearActiveInstance()
       reactApplicationContext.currentActivity?.let { activity ->
         activity.runOnUiThread {
           activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -200,6 +222,28 @@ class PoseModule(reactContext: ReactApplicationContext) :
       promise.resolve(null)
     } catch (e: Exception) {
       promise.reject("STOP_FAILED", e.message, e)
+    }
+  }
+
+  /**
+   * A PreviewView just mounted. Re-issue the (deferred) surface provider so
+   * CameraX requests a surface again — this time it resolves to a real view.
+   *
+   * CameraX requests a surface once per session configuration. If the React
+   * view mounts after that, our provider already declined the request and
+   * nothing would ever recover it. Re-setting the provider invalidates the
+   * session config and triggers a fresh request. Cheap: the same Preview and
+   * ImageAnalysis instances stay bound, so no frames are dropped and the
+   * detector is not rebuilt.
+   */
+  private fun onPreviewViewAttached() {
+    val preview = preview ?: return // no live session; startPoseDetection will bind
+    val mainExecutor = ContextCompat.getMainExecutor(reactApplicationContext)
+    mainExecutor.execute {
+      if (this.preview !== preview) return@execute // torn down meanwhile
+      preview.setSurfaceProvider(
+        DeferredSurfaceProvider { previewViewRef?.surfaceProvider }
+      )
     }
   }
 
@@ -416,14 +460,61 @@ class PoseModule(reactContext: ReactApplicationContext) :
     @Volatile
     private var previewViewRef: PreviewView? = null
 
+    /**
+     * The module whose session is live, so a late-mounting view can reach
+     * it. Static for the same reason as previewViewRef.
+     */
+    @Volatile
+    private var activeInstance: PoseModule? = null
+
     @JvmStatic
     fun attachPreviewView(view: PreviewView) {
       previewViewRef = view
+      // The React view routinely mounts AFTER the session is configured.
+      // CameraX requests a surface only once per configuration, and our
+      // deferred provider declined it back then — so the view would be left
+      // black with no later event to recover. Re-setting the provider
+      // invalidates the session config and makes CameraX ask again, by
+      // which point previewViewRef is set. No unbind/rebind churn.
+      activeInstance?.onPreviewViewAttached()
     }
 
     @JvmStatic
     fun detachPreviewView() {
       previewViewRef = null
     }
+
+    @JvmStatic
+    internal fun clearActiveInstance() {
+      activeInstance = null
+    }
+  }
+}
+
+/**
+ * Surface provider that resolves the real target at request time instead of
+ * capturing it at bind time. CameraX calls [onSurfaceRequested] once the
+ * session is configured, by which point a late-mounting PreviewView has
+ * arrived — so the lambda reads `previewViewRef` lazily and forwards.
+ *
+ * Without this, binding Preview required the view to already exist, and the
+ * React mount order decided whether the user got a viewfinder or a black
+ * screen. If no view is mounted at all the request is declined, which tells
+ * CameraX to drop Preview rather than stall the whole session.
+ */
+private class DeferredSurfaceProvider(
+  private val resolve: () -> androidx.camera.core.Preview.SurfaceProvider?,
+) : androidx.camera.core.Preview.SurfaceProvider {
+  override fun onSurfaceRequested(
+    request: androidx.camera.core.Preview.SurfaceRequest,
+  ) {
+    val target = resolve()
+    if (target == null) {
+      // Headless: reps still count, just no viewfinder. Explicitly decline
+      // so CameraX does not wait forever for a surface that isn't coming.
+      request.willNotProvideSurface()
+      return
+    }
+    target.onSurfaceRequested(request)
   }
 }
