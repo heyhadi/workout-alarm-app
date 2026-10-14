@@ -87,11 +87,40 @@ class UpdateModule(reactContext: ReactApplicationContext) :
       if (connection.responseCode != HttpURLConnection.HTTP_OK) {
         throw IllegalStateException("Download failed (HTTP ${connection.responseCode})")
       }
-      connection.inputStream.use { input -> apk.outputStream().use { input.copyTo(it) } }
+      val total = connection.contentLengthLong.takeIf { it > 0 } ?: -1L
+      var downloaded = 0L
+      var lastEmitted = 0L
+      connection.inputStream.use { input ->
+        apk.outputStream().use { output ->
+          val buf = ByteArray(64 * 1024)
+          while (true) {
+            val n = input.read(buf)
+            if (n < 0) break
+            output.write(buf, 0, n)
+            downloaded += n
+            // Throttle events: emit at most every 256 KB so the bridge
+            // isn't flooded on a fast connection.
+            if (downloaded - lastEmitted >= 256 * 1024 || (total > 0 && downloaded >= total)) {
+              lastEmitted = downloaded
+              emitProgress(downloaded, total)
+            }
+          }
+        }
+      }
+      emitProgress(downloaded, total)
     } finally {
       connection.disconnect()
     }
     return apk
+  }
+
+  private fun emitProgress(downloaded: Long, total: Long) {
+    reactApplicationContext
+      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+      .emit("onDownloadProgress", Arguments.createMap().apply {
+        putDouble("downloaded", downloaded.toDouble())
+        putDouble("total", total.toDouble())
+      })
   }
 
   /** Same package, newer build, same signing key — or no install. */
