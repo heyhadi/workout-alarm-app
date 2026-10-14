@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTokens } from '../appearance';
 import { radius, space, type as typeScale } from '../../theme/tokens';
-import { checkForUpdate, installUpdate } from '../native/updates';
+import {
+  addDownloadProgressListener,
+  checkForUpdate,
+  installUpdate,
+} from '../native/updates';
 import type { AvailableUpdate } from '../updates/latestRelease';
 import { useStrings } from '../i18n';
 
@@ -18,6 +22,7 @@ export function UpdateCard() {
   const strings = useStrings();
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
   const [state, setState] = useState<InstallState>('idle');
+  const [progress, setProgress] = useState(0); // 0..1 while downloading
 
   useEffect(() => {
     let cancelled = false;
@@ -35,18 +40,24 @@ export function UpdateCard() {
 
   const handleInstall = async () => {
     setState('downloading');
+    setProgress(0);
+    const unsub = addDownloadProgressListener((p) => {
+      if (p.total > 0) setProgress(Math.min(1, p.downloaded / p.total));
+    });
     try {
       await installUpdate(update);
       setState('idle'); // Android's installer is open now
     } catch (e) {
       const code = (e as { code?: string }).code;
       setState(code === 'NEEDS_INSTALL_PERMISSION' ? 'needs-permission' : 'failed');
+    } finally {
+      unsub();
     }
   };
 
   const detail =
     state === 'downloading'
-      ? strings.update.downloading
+      ? `${strings.update.downloading} ${Math.round(progress * 100)}%`
       : state === 'needs-permission'
         ? strings.update.needsPermission
         : state === 'failed'
@@ -62,6 +73,20 @@ export function UpdateCard() {
           {strings.update.available}
         </Text>
         <Text style={[typeScale.bodySmall, { color: t.textSecondary }]}>{detail}</Text>
+        {state === 'downloading' && (
+          <View
+            style={[styles.track, { backgroundColor: t.border }]}
+            accessibilityRole="progressbar"
+            accessibilityValue={{ now: Math.round(progress * 100), min: 0, max: 100 }}
+          >
+            <View
+              style={[
+                styles.fill,
+                { width: `${Math.round(progress * 100)}%`, backgroundColor: t.accentStrong },
+              ]}
+            />
+          </View>
+        )}
       </View>
       <Pressable
         accessibilityRole="button"
@@ -94,5 +119,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     minHeight: 40,
     justifyContent: 'center',
+  },
+  track: {
+    height: 6,
+    borderRadius: 3,
+    marginTop: space.sm,
+    overflow: 'hidden',
+  },
+  fill: {
+    height: 6,
+    borderRadius: 3,
   },
 });
