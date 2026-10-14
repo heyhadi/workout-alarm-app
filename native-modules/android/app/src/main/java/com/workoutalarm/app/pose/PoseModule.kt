@@ -154,6 +154,38 @@ class PoseModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  /**
+   * Switch the exercise being counted WITHOUT restarting the camera.
+   * Only the rep-counter config is swapped and the count reset; the
+   * CameraX session keeps streaming. Use this when the user picks a
+   * different exercise mid-session — a full stop/start races the
+   * camera teardown and can leave the preview black.
+   */
+  @ReactMethod
+  fun setPoseExercise(exercise: String, repTarget: Double, config: ReadableMap, promise: Promise) {
+    try {
+      this.exercise = exercise
+      this.repTarget = repTarget.toInt()
+      downAt = config.getDouble("downThresholdDeg")
+      upAt = config.getDouble("upThresholdDeg")
+      minRepMs = config.getDouble("minRepMs").toLong()
+      maxRepMs = config.getDouble("maxRepMs").toLong()
+      this.total = 0
+      resetCycle()
+      framing = FRAMING_NONE
+      pendingFraming = FRAMING_NONE
+      standingHipHeight = 0.0
+      emit("onRepCounted", Arguments.createMap().apply {
+        putInt("reps", 0)
+        putInt("total", 0)
+        putString("exercise", exercise)
+      })
+      promise.resolve(null)
+    } catch (e: Exception) {
+      promise.reject("SET_EXERCISE_FAILED", e.message, e)
+    }
+  }
+
   @ReactMethod
   fun stopPoseDetection(promise: Promise) {
     try {
