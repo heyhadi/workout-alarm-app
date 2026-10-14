@@ -4,6 +4,7 @@ import {
   addFramingListener,
   addRepCountedListener,
   isPoseModuleAvailable,
+  setPoseExercise,
   startPoseDetection,
   stopPoseDetection,
 } from '../native/pose';
@@ -123,17 +124,27 @@ export function useWorkoutCounter({
     return () => clearTimeout(timer);
   }, [mode, active, cameraGranted, framing]);
 
-  // Camera reps.
+  // Camera reps: the camera session starts once and stops on teardown.
+  // Switching exercise hot-swaps the counter config via setPoseExercise —
+  // the camera keeps streaming. A full stop/start races the CameraX
+  // teardown and can leave the preview black.
+  const exerciseRef = useRef(exercise);
+  const repTargetRef = useRef(repTarget);
+  exerciseRef.current = exercise;
+  repTargetRef.current = repTarget;
+
   useEffect(() => {
-    if (!active || mode !== 'camera' || !cameraGranted || exercise === 'steps') return;
+    if (!active || mode !== 'camera' || !cameraGranted) return;
     let cancelled = false;
     // Subscribe before starting so no early event is missed.
     const unsubRep = addRepCountedListener((p) => {
       setReps(p.total);
-      finishIfDone(p.total, repTarget);
+      finishIfDone(p.total, repTargetRef.current);
     });
     const unsubFraming = addFramingListener((p) => setFraming(p.state));
-    startPoseDetection(exercise, repTarget, EXERCISE_COUNTER_CONFIGS[exercise]).catch(
+    const ex = exerciseRef.current;
+    if (ex === 'steps') return;
+    startPoseDetection(ex, repTargetRef.current, EXERCISE_COUNTER_CONFIGS[ex]).catch(
       () => {
         if (!cancelled) setCameraFailed(true);
       },
@@ -144,7 +155,26 @@ export function useWorkoutCounter({
       unsubFraming();
       stopPoseDetection().catch(() => undefined);
     };
-  }, [active, mode, cameraGranted, exercise, repTarget, finishIfDone]);
+    // Intentionally not on exercise/repTarget: those hot-swap below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, mode, cameraGranted, finishIfDone]);
+
+  // Exercise switch mid-session: swap the native counter config, keep the
+  // camera alive. The native side resets the count and emits total=0.
+  const exerciseStartedRef = useRef<ExerciseType | null>(null);
+  useEffect(() => {
+    if (!active || mode !== 'camera' || !cameraGranted || exercise === 'steps') return;
+    if (exerciseStartedRef.current === null) {
+      exerciseStartedRef.current = exercise;
+      return; // First run — the lifecycle effect above already started it.
+    }
+    if (exerciseStartedRef.current === exercise) return;
+    exerciseStartedRef.current = exercise;
+    completedRef.current = false;
+    setPoseExercise(exercise, repTarget, EXERCISE_COUNTER_CONFIGS[exercise]).catch(
+      () => undefined,
+    );
+  }, [exercise, repTarget, active, mode, cameraGranted]);
 
   // Step backup.
   useEffect(() => {
