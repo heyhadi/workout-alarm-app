@@ -18,18 +18,19 @@ const EXERCISES: ExerciseType[] = ['squats', 'pushups', 'jumping_jacks', 'situps
  */
 export default function PracticeScreen() {
   const [exercise, setExercise] = useState<ExerciseType>('squats');
-  // A new key per pick remounts the counter: fresh count, fresh camera start.
+  // A new key per retry remounts the counter. Exercise picks do NOT
+  // remount — the counter hot-swaps via setPoseExercise and the camera
+  // keeps streaming (remounting races the CameraX teardown → black preview).
   const [round, setRound] = useState(0);
 
   const pick = (next: ExerciseType) => {
     setExercise(next);
-    setRound((r) => r + 1);
   };
 
   return (
     <Screen mode="alarm" noPadding edges={['left', 'right']}>
       <PracticeRound
-        key={`${exercise}-${round}`}
+        key={round}
         exercise={exercise}
         onPick={pick}
         onAgain={() => setRound((r) => r + 1)}
