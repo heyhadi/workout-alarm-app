@@ -1,14 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { useRouter } from 'expo-router';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTokens } from '../appearance';
 import { useStrings } from '../i18n';
 import { primitives } from '../../theme/tokens';
 
-type TabId = 'alarm' | 'practice' | 'settings';
+type TabId = 'index' | 'practice' | 'settings';
 
 function TabIcon({ id, color }: { id: TabId; color: string }) {
-  if (id === 'alarm') {
+  if (id === 'index') {
     return (
       <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
         <Circle cx={12} cy={13} r={7} stroke={color} strokeWidth={1.8} />
@@ -47,15 +47,20 @@ function TabIcon({ id, color }: { id: TabId; color: string }) {
   );
 }
 
-export function TabBar({ active }: { active: TabId }) {
-  const router = useRouter();
+const LABELS: Record<TabId, 'title' | 'practice' | 'settings'> = {
+  index: 'title',
+  practice: 'practice',
+  settings: 'settings',
+};
+
+/**
+ * Custom bottom tab bar for the main tabs. Driven by the tab navigator —
+ * tapping a tab switches without pushing onto the stack, so the system
+ * back gesture behaves correctly.
+ */
+export function TabsBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const t = useTokens();
   const s = useStrings();
-  const tabs: { id: TabId; label: string; route: string }[] = [
-    { id: 'alarm', label: s.alarms.title, route: '/' },
-    { id: 'practice', label: s.alarms.practice, route: '/practice' },
-    { id: 'settings', label: s.alarms.settings, route: '/settings' },
-  ];
   return (
     <View
       style={[
@@ -63,21 +68,30 @@ export function TabBar({ active }: { active: TabId }) {
         { backgroundColor: t.bgScreen, borderTopColor: t.border },
       ]}
     >
-      {tabs.map((tab) => {
-        const isActive = tab.id === active;
+      {state.routes.map((route, i) => {
+        const id = route.name as TabId;
+        const isActive = state.index === i;
         const color = isActive ? primitives.energy[500] : t.textSecondary;
+        const label = s.alarms[LABELS[id]];
         return (
           <Pressable
-            key={tab.id}
+            key={route.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
             onPress={() => {
-              if (!isActive) router.replace(tab.route as never);
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+              if (!isActive && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
             }}
             style={styles.tab}
           >
-            <TabIcon id={tab.id} color={color} />
-            <Text style={[styles.label, { color }]}>{tab.label}</Text>
+            <TabIcon id={id} color={color} />
+            <Text style={[styles.label, { color }]}>{label}</Text>
           </Pressable>
         );
       })}
