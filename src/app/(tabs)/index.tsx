@@ -140,7 +140,11 @@ export default function AlarmListScreen() {
               { color: t.textSecondary, marginBottom: space.lg },
             ]}
           >
-            {s.alarms.nextAlarm(s.timeUntil(countdown))}
+            {s.alarms.nextAlarmPrefix}
+            <Text style={{ color: t.accentStrong }}>
+              {s.timeUntil(countdown)}
+            </Text>
+            {s.alarms.nextAlarmSuffix}
           </Text>
         )}
 
