@@ -6,7 +6,7 @@ import { Block, RowText, Section } from '../../components/Card';
 import { useAlarmReadiness } from '../../hooks/useAlarmReadiness';
 import { systemLanguage, useLanguageSetting, useStrings } from '../../i18n';
 import { useAppearanceSetting, useTokens } from '../../appearance';
-import { primitives, space, type as typeScale } from '../../theme/tokens';
+import { primitives, space, type as typeScale } from '../../../theme/tokens';
 import {
   getSettings,
   setEmergencyExit,
