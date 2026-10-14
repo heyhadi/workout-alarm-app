@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AlarmCard } from '../../components/AlarmCard';
+import { UpdateCard } from '../../components/UpdateCard';
 import { Screen } from '../../components/Screen';
 import { useTokens } from '../../appearance';
 import { useStrings } from '../../i18n';
@@ -132,6 +133,8 @@ export default function AlarmListScreen() {
             </View>
           )}
         </View>
+
+        <UpdateCard />
 
         {countdown !== undefined && (
           <Text
