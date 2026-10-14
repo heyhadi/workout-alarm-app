@@ -9,7 +9,11 @@ import {
   updateFromRelease,
   type AvailableUpdate,
 } from '../updates/latestRelease';
-import { getNativeModule, isNativeModuleAvailable } from './registry';
+import {
+  getModuleEventEmitter,
+  getNativeModule,
+  isNativeModuleAvailable,
+} from './registry';
 
 const MODULE_NAME = 'UpdateModule';
 
@@ -44,4 +48,23 @@ export async function checkForUpdate(): Promise<AvailableUpdate | null> {
  */
 export async function installUpdate(update: AvailableUpdate): Promise<void> {
   await spec().downloadAndInstall(update.apkUrl);
+}
+
+export interface DownloadProgress {
+  /** Bytes downloaded so far. */
+  downloaded: number;
+  /** Total bytes, or -1 when the server didn't send a length. */
+  total: number;
+}
+
+/**
+ * Subscribe to `onDownloadProgress` while an update downloads.
+ * Events are throttled natively (~every 256 KB).
+ */
+export function addDownloadProgressListener(
+  listener: (progress: DownloadProgress) => void,
+): () => void {
+  const emitter = getModuleEventEmitter(MODULE_NAME);
+  const sub = emitter.addListener('onDownloadProgress', listener);
+  return () => sub.remove();
 }
