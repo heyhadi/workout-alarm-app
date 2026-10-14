@@ -5,7 +5,7 @@ import { AlarmCard } from '../../components/AlarmCard';
 import { Screen } from '../../components/Screen';
 import { useTokens } from '../../appearance';
 import { useStrings } from '../../i18n';
-import { primitives, space } from '../../theme/tokens';
+import { primitives, space } from '../../../theme/tokens';
 import { timeUntil, type TimeUntil } from '../../workout/scheduling';
 import { nextFireTimeMs } from '../../native/alarms';
 import {
