@@ -25,6 +25,11 @@ interface PoseModuleSpec {
     repTarget: number,
     config: RepCounterConfig,
   ): Promise<void>;
+  setPoseExercise(
+    exercise: ExerciseType,
+    repTarget: number,
+    config: RepCounterConfig,
+  ): Promise<void>;
   stopPoseDetection(): Promise<void>;
 }
 
@@ -48,6 +53,20 @@ export async function startPoseDetection(
 /** Stop the camera pipeline and release the camera. */
 export async function stopPoseDetection(): Promise<void> {
   await spec().stopPoseDetection();
+}
+
+/**
+ * Switch the counted exercise without restarting the camera.
+ * The native session keeps streaming; only the rep-counter config
+ * is swapped and the count reset. Use when the user picks a different
+ * exercise mid-session — a full stop/start can leave the preview black.
+ */
+export async function setPoseExercise(
+  exercise: ExerciseType,
+  repTarget: number,
+  config: RepCounterConfig,
+): Promise<void> {
+  await spec().setPoseExercise(exercise, repTarget, config);
 }
 
 /** Subscribe to `onRepCounted` — the only rep source the app trusts. */
