@@ -7,6 +7,7 @@ import { useAlarmReadiness } from '../../hooks/useAlarmReadiness';
 import { systemLanguage, useLanguageSetting, useStrings } from '../../i18n';
 import { useAppearanceSetting, useTokens } from '../../appearance';
 import { primitives, space, type as typeScale } from '../../../theme/tokens';
+import { appVersion } from '../../config';
 import {
   getSettings,
   setEmergencyExit,
@@ -178,6 +179,23 @@ export default function SettingsScreen() {
               label: strings.form.minutes(mins),
             }))}
           />
+        </Section>
+
+        {/* Build number matters: it's what the in-app updater compares. */}
+        <Section title={s.about}>
+          <Block first style={styles.rowBlock}>
+            <RowText
+              title={s.version}
+              body={
+                appVersion.build !== null
+                  ? s.buildNumber(appVersion.build)
+                  : s.localBuild
+              }
+            />
+            <Text style={[typeScale.label, { color: t.textSecondary }]}>
+              {appVersion.version}
+            </Text>
+          </Block>
         </Section>
       </ScrollView>
     </Screen>

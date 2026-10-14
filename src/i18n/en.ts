@@ -207,6 +207,10 @@ export const en = {
     readinessBody:
       'Permissions the alarm needs to ring, take over the screen and be finished.',
     lockIn: 'Default lock-in window',
+    about: 'About',
+    version: 'App version',
+    buildNumber: (n: number) => `Build ${n}`,
+    localBuild: 'Local build — no build number',
   },
   readiness: {
     title: 'Get alarm-ready',

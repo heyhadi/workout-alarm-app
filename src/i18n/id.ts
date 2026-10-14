@@ -202,6 +202,10 @@ export const id: Strings = {
     readinessBody:
       'Izin yang dibutuhin alarm biar bisa bunyi, muncul di layar, dan dimatiin.',
     lockIn: 'Waktu kunci bawaan',
+    about: 'Tentang',
+    version: 'Versi aplikasi',
+    buildNumber: (n) => `Build ${n}`,
+    localBuild: 'Build lokal — nggak ada nomor build',
   },
   readiness: {
     title: 'Siapin alarm',
