@@ -128,10 +128,18 @@ export function useWorkoutCounter({
   // Switching exercise hot-swaps the counter config via setPoseExercise —
   // the camera keeps streaming. A full stop/start races the CameraX
   // teardown and can leave the preview black.
+  //
+  // exercise/repTarget are read by the effect below without being its
+  // dependencies (adding them would restart the camera on every pick), so
+  // they travel through refs. Refs are synced in an effect — never during
+  // render — and this effect is declared first so it always runs before the
+  // one that reads them.
   const exerciseRef = useRef(exercise);
   const repTargetRef = useRef(repTarget);
-  exerciseRef.current = exercise;
-  repTargetRef.current = repTarget;
+  useEffect(() => {
+    exerciseRef.current = exercise;
+    repTargetRef.current = repTarget;
+  }, [exercise, repTarget]);
 
   useEffect(() => {
     if (!active || mode !== 'camera' || !cameraGranted) return;
@@ -160,8 +168,9 @@ export function useWorkoutCounter({
       unsubFraming();
       stopPoseDetection().catch(() => undefined);
     };
-    // Intentionally not on exercise/repTarget: those hot-swap below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally omits exercise/repTarget: those hot-swap via the
+    // setPoseExercise effect below rather than restarting the camera.
+    // Read through refs so the latest values are used without re-triggering.
   }, [active, mode, cameraGranted, finishIfDone]);
 
   // Exercise switch mid-session: swap the native counter config, keep the

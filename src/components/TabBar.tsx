@@ -1,6 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+// Type comes from expo-router's VENDORED copy of react-navigation, not the
+// top-level package. The `Tabs` component's `tabBar` callback is typed against
+// that internal graph, so importing BottomTabBarProps from '@react-navigation/
+// bottom-tabs' produces a second, incompatible copy of the type (ColorValue
+// vs string) and the callback no longer typechecks. These two must agree.
+import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import { useTokens } from '../appearance';
 import { useStrings } from '../i18n';
 import { primitives } from '../../theme/tokens';
@@ -58,15 +63,12 @@ const LABELS: Record<TabId, 'title' | 'practice' | 'settings'> = {
  * tapping a tab switches without pushing onto the stack, so the system
  * back gesture behaves correctly.
  */
-export function TabsBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export function TabsBar({ state, navigation }: BottomTabBarProps) {
   const t = useTokens();
   const s = useStrings();
   return (
     <View
-      style={[
-        styles.bar,
-        { backgroundColor: t.bgScreen, borderTopColor: t.border },
-      ]}
+      style={[styles.bar, { backgroundColor: t.bgScreen, borderTopColor: t.border }]}
     >
       {state.routes.map((route, i) => {
         const id = route.name as TabId;

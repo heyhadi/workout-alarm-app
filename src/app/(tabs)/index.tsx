@@ -8,10 +8,10 @@ import { useTokens } from '../../appearance';
 import { useStrings } from '../../i18n';
 import { primitives, space } from '../../../theme/tokens';
 import { timeUntil, type TimeUntil } from '../../workout/scheduling';
-import { nextFireTimeMs } from '../../native/alarms';
 import {
   cancelAlarm,
   isAlarmModuleAvailable,
+  nextFireTimeMs,
   scheduleAlarm,
 } from '../../native/alarms';
 import {
@@ -50,9 +50,7 @@ export default function AlarmListScreen() {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [streak, setStreak] = useState(0);
   const [countdown, setCountdown] = useState<TimeUntil | undefined>(undefined);
-  const [lockedById, setLockedById] = useState<Map<string, boolean>>(
-    () => new Map(),
-  );
+  const [lockedById, setLockedById] = useState<Map<string, boolean>>(() => new Map());
 
   const refresh = useCallback(async () => {
     let rows = await listAlarms();
@@ -124,9 +122,7 @@ export default function AlarmListScreen() {
     <Screen noPadding>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: t.textPrimary }]}>
-            {s.alarms.title}
-          </Text>
+          <Text style={[styles.title, { color: t.textPrimary }]}>{s.alarms.title}</Text>
           {streak > 0 && (
             <View style={[styles.streak, { backgroundColor: t.bgSurface }]}>
               <Text style={styles.streakText}>🔥 {s.streak(streak)}</Text>
@@ -144,9 +140,7 @@ export default function AlarmListScreen() {
             ]}
           >
             {s.alarms.nextAlarmPrefix}
-            <Text style={{ color: t.accentStrong }}>
-              {s.timeUntil(countdown)}
-            </Text>
+            <Text style={{ color: t.accentStrong }}>{s.timeUntil(countdown)}</Text>
             {s.alarms.nextAlarmSuffix}
           </Text>
         )}
