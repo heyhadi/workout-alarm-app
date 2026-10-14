@@ -1,26 +1,26 @@
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { AlarmCard } from '../components/AlarmCard';
-import { Screen } from '../components/Screen';
-import { useTokens } from '../appearance';
-import { useStrings } from '../i18n';
+import { AlarmCard } from '../../components/AlarmCard';
+import { Screen } from '../../components/Screen';
+import { useTokens } from '../../appearance';
+import { useStrings } from '../../i18n';
 import { primitives, space } from '../../theme/tokens';
-import { timeUntil, type TimeUntil } from '../workout/scheduling';
-import { nextFireTimeMs } from '../native/alarms';
+import { timeUntil, type TimeUntil } from '../../workout/scheduling';
+import { nextFireTimeMs } from '../../native/alarms';
 import {
   cancelAlarm,
   isAlarmModuleAvailable,
   scheduleAlarm,
-} from '../native/alarms';
+} from '../../native/alarms';
 import {
   currentStreakDays,
   deleteAlarm,
   listAlarms,
   setAlarmEnabled,
   upsertAlarm,
-} from '../storage/db';
-import type { Alarm } from '../types';
+} from '../../storage/db';
+import type { Alarm } from '../../types';
 
 const SAMPLE_ALARM: Alarm = {
   id: 'sample-1',
