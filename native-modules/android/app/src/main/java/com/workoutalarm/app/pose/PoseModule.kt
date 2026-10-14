@@ -480,8 +480,11 @@ class PoseModule(reactContext: ReactApplicationContext) :
     }
 
     @JvmStatic
-    fun detachPreviewView() {
-      previewViewRef = null
+    fun detachPreviewView(view: PreviewView) {
+      // Only clear our own view. On a remount ("Again") the new view can be
+      // created before the old one is dropped; clearing unconditionally
+      // would wipe the new view and leave the preview black.
+      if (previewViewRef === view) previewViewRef = null
     }
 
     @JvmStatic
@@ -506,7 +509,7 @@ private class DeferredSurfaceProvider(
   private val resolve: () -> androidx.camera.core.Preview.SurfaceProvider?,
 ) : androidx.camera.core.Preview.SurfaceProvider {
   override fun onSurfaceRequested(
-    request: androidx.camera.core.Preview.SurfaceRequest,
+    request: androidx.camera.core.SurfaceRequest,
   ) {
     val target = resolve()
     if (target == null) {

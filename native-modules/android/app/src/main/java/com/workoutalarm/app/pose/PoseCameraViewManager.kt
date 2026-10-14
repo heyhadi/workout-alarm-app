@@ -38,7 +38,7 @@ class PoseCameraViewManager : SimpleViewManager<FrameLayout>() {
 
   override fun onDropViewInstance(view: FrameLayout) {
     super.onDropViewInstance(view)
-    PoseModule.detachPreviewView()
+    (view.getChildAt(0) as? PreviewView)?.let { PoseModule.detachPreviewView(it) }
   }
 
   /**
