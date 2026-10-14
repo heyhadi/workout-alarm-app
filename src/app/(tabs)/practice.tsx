@@ -4,7 +4,7 @@ import { Screen } from '../../components/Screen';
 import { WorkoutView } from '../../components/WorkoutView';
 import { useStrings } from '../../i18n';
 import { useWorkoutCounter } from '../../hooks/useWorkoutCounter';
-import { primitives, radius, space, type as typeScale } from '../../theme/tokens';
+import { primitives, radius, space, type as typeScale } from '../../../theme/tokens';
 import type { ExerciseType } from '../../types';
 
 const PRACTICE_REPS = 10;
