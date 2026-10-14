@@ -52,6 +52,8 @@ export const en = {
       `${n} ${plural(n, 'setting', 'settings')} missing — it may ring without opening the workout.`,
     fixNow: 'Fix now',
     nextAlarm: (when: string) => `Next alarm in ${when}`,
+    nextAlarmPrefix: 'Next alarm in ',
+    nextAlarmSuffix: '',
     locked: (time: string) => `Locked — fires ${time}`,
     empty: 'No alarms yet. Add your first one below.',
     newAlarm: '+ New alarm',
