@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Screen } from '../components/Screen';
-import { Block, RowText, Section } from '../components/Card';
-import { useAlarmReadiness } from '../hooks/useAlarmReadiness';
-import { systemLanguage, useLanguageSetting, useStrings } from '../i18n';
-import { useAppearanceSetting, useTokens } from '../appearance';
+import { Screen } from '../../components/Screen';
+import { Block, RowText, Section } from '../../components/Card';
+import { useAlarmReadiness } from '../../hooks/useAlarmReadiness';
+import { systemLanguage, useLanguageSetting, useStrings } from '../../i18n';
+import { useAppearanceSetting, useTokens } from '../../appearance';
 import { primitives, space, type as typeScale } from '../../theme/tokens';
 import {
   getSettings,
@@ -13,8 +13,8 @@ import {
   setLockInMinutes,
   type AppearanceSetting,
   type LanguageSetting,
-} from '../storage/settings';
-import { STEPS_PER_REP } from '../native/steps';
+} from '../../storage/settings';
+import { STEPS_PER_REP } from '../../native/steps';
 
 const LOCK_IN_OPTIONS = [15, 30, 45, 60];
 
